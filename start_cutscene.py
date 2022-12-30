@@ -8,16 +8,16 @@ penciles = pygame.sprite.Group()
 
 
 class Ball(pygame.sprite.Sprite):
-    def __init__(self, image, x, y, napr, v):
+    def __init__(self, image, x, y, napr, v, FPS):
         super().__init__(all_sprites)
         self.add(balls)
         self.image = image
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x, y
-        self.x, self.napr, self.v = self.rect.x, napr, v
+        self.x, self.napr, self.v, self.fps = self.rect.x, napr, v, FPS
 
     def update(self):
-        self.x += self.napr * self.v / FPS
+        self.x += self.napr * self.v / self.fps
         self.rect.x = int(self.x)
 
 
@@ -32,8 +32,8 @@ def part_1(screen, size, FPS):
     font_sur.set_alpha(alpha)
 
     diam = 200
-    b1 = Ball(im_1, 0, HEIGHT // 2 - diam // 2, 1, WIDTH // 2 - diam)
-    b2 = Ball(im_2, WIDTH - diam, HEIGHT // 2 - diam // 2, -1, WIDTH // 2 - diam)
+    b1 = Ball(im_1, 0, HEIGHT // 2 - diam // 2, 1, WIDTH // 2 - diam, FPS)
+    b2 = Ball(im_2, WIDTH - diam, HEIGHT // 2 - diam // 2, -1, WIDTH // 2 - diam, FPS)
     text = False
 
     while True:
@@ -71,7 +71,7 @@ class Background(pygame.sprite.Sprite):
 
 
 class Pencil(pygame.sprite.Sprite):
-    def __init__(self, image, points, v):
+    def __init__(self, image, points, v, fps, screen):
         super().__init__(all_sprites)
         self.add(penciles)
         self.points = points
@@ -82,23 +82,25 @@ class Pencil(pygame.sprite.Sprite):
         self.cur_letter, self.cur_point = 0, 1
         self.last_point = None
         self.v = v
+        self.fps = fps
+        self.screen = screen
         self.drawed_lines = []
 
     def update(self):
         if self.cur_letter < len(self.points):
             x, y = self.points[self.cur_letter][self.cur_point]
-            if abs(x - self.rect.x) < self.v / FPS:
+            if abs(x - self.rect.x) < self.v / self.fps:
                 self.rect.x = x
             else:
-                self.rect.x += (self.v / FPS) * (1 if self.rect.x < x else -1)
-            if abs(y - self.rect.y) < self.v / FPS:
+                self.rect.x += (self.v / self.fps) * (1 if self.rect.x < x else -1)
+            if abs(y - self.rect.y) < self.v / self.fps:
                 self.rect.y = y
             else:
-                self.rect.y += (self.v / FPS) * (1 if self.rect.y < y else -1)
+                self.rect.y += (self.v / self.fps) * (1 if self.rect.y < y else -1)
             if self.last_point:
                 self.drawed_lines += [(self.last_point, (self.rect.x, self.rect.y))]
             for i in self.drawed_lines:
-                pygame.draw.line(screen, (67, 67, 67), i[0], i[1], 5)
+                pygame.draw.line(self.screen, (67, 67, 67), i[0], i[1], 5)
             self.last_point = (self.rect.x, self.rect.y)
             if self.rect.x == x and self.rect.y == y:
                 self.cur_point += 1
@@ -202,7 +204,7 @@ def part_2(screen, size, FPS):
         [(1408, 669), (1410, 679), (1412, 692), (1413, 698), (1417, 714), (1420, 724), (1422, 733), (1423, 743),
          (1427, 757), (1428, 764), (1427, 761), (1435, 752), (1440, 745), (1445, 726), (1445, 716), (1458, 697),
          (1465, 688), (1466, 680), (1470, 672), (1473, 666), (1474, 666)]]
-    pencil = Pencil(pencil_im, points, 3000)
+    pencil = Pencil(pencil_im, points, 3000, FPS, screen)
 
     while True:
         for event in pygame.event.get():

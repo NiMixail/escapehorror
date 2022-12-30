@@ -8,4 +8,4 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('Scary smile')
     FPS = 60
-    start_cutscene()
+    start_cutscene(screen, size, FPS)
