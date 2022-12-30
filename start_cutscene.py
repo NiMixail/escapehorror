@@ -28,7 +28,7 @@ def part_1(screen, size, FPS):
     font = pygame.font.Font(None, 30)
     alpha = 0
     alpha_moving = 5
-    font_sur = font.render("PRESENTES", True, (0, 0, 0))
+    font_sur = font.render("PRESENTS", True, (0, 0, 0))
     font_sur.set_alpha(alpha)
 
     diam = 200
@@ -249,7 +249,7 @@ def part_3(screen, size, FPS):
         elif alpha <= 0 and alpha_moving < -1:
             return
         pygame.display.flip()
-        clock.tick(FPS)
+        clock.tick(FPS // 4)
 
 
 def start_cutscene(screen, size, FPS):
