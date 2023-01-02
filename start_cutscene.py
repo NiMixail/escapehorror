@@ -1,16 +1,11 @@
 import pygame
 from tools import load_image, terminate
 
-all_sprites = pygame.sprite.Group()
-balls = pygame.sprite.Group()
-backgroundes = pygame.sprite.Group()
-penciles = pygame.sprite.Group()
-
 
 class Ball(pygame.sprite.Sprite):
-    def __init__(self, image, x, y, napr, v, FPS):
+    def __init__(self, image, x, y, napr, v, FPS, all_sprites, group):
         super().__init__(all_sprites)
-        self.add(balls)
+        self.add(group)
         self.image = image
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x, y
@@ -24,6 +19,9 @@ class Ball(pygame.sprite.Sprite):
 def part_1(screen, size, FPS):
     WIDTH, HEIGHT = size
     clock = pygame.time.Clock()
+    all_sprites = pygame.sprite.Group()
+    balls = pygame.sprite.Group()
+
     im_1, im_2 = load_image('start_cutscene/picture_1.png', -1), load_image('start_cutscene/picture_2.png', -1)
     font = pygame.font.Font(None, 30)
     alpha = 0
@@ -32,8 +30,8 @@ def part_1(screen, size, FPS):
     font_sur.set_alpha(alpha)
 
     diam = 200
-    b1 = Ball(im_1, 0, HEIGHT // 2 - diam // 2, 1, WIDTH // 2 - diam, FPS)
-    b2 = Ball(im_2, WIDTH - diam, HEIGHT // 2 - diam // 2, -1, WIDTH // 2 - diam, FPS)
+    b1 = Ball(im_1, 0, HEIGHT // 2 - diam // 2, 1, WIDTH // 2 - diam, FPS, all_sprites, balls)
+    b2 = Ball(im_2, WIDTH - diam, HEIGHT // 2 - diam // 2, -1, WIDTH // 2 - diam, FPS, all_sprites, balls)
     text = False
 
     while True:
@@ -63,17 +61,17 @@ def part_1(screen, size, FPS):
 
 
 class Background(pygame.sprite.Sprite):
-    def __init__(self, image):
+    def __init__(self, image, all_sprites, group):
         super().__init__(all_sprites)
         self.image = image
         self.rect = self.image.get_rect()
-        self.add(backgroundes)
+        self.add(group)
 
 
 class Pencil(pygame.sprite.Sprite):
-    def __init__(self, image, points, v, fps, screen):
+    def __init__(self, image, points, v, fps, screen, all_sprites, group):
         super().__init__(all_sprites)
-        self.add(penciles)
+        self.add(group)
         self.points = points
         self.image = image
         self.rect = self.image.get_rect()
@@ -115,8 +113,12 @@ class Pencil(pygame.sprite.Sprite):
 def part_2(screen, size, FPS):
     WIDTH, HEIGHT = size
     clock = pygame.time.Clock()
+    all_sprites = pygame.sprite.Group()
+    backgroundes = pygame.sprite.Group()
+    penciles = pygame.sprite.Group()
+
     backgr_im, pencil_im = load_image('start_cutscene/background.png'), load_image('start_cutscene/pencil.png', -1)
-    background = Background(backgr_im)
+    background = Background(backgr_im, all_sprites, backgroundes)
     points = [
         [(148, 121), (147, 130), (145, 156), (143, 169), (140, 184), (137, 201), (136, 217), (136, 229), (135, 239),
          (134, 256), (135, 272), (133, 294), (130, 305), (126, 317), (118, 334), (112, 345), (100, 349), (97, 349)],
@@ -204,7 +206,7 @@ def part_2(screen, size, FPS):
         [(1408, 669), (1410, 679), (1412, 692), (1413, 698), (1417, 714), (1420, 724), (1422, 733), (1423, 743),
          (1427, 757), (1428, 764), (1427, 761), (1435, 752), (1440, 745), (1445, 726), (1445, 716), (1458, 697),
          (1465, 688), (1466, 680), (1470, 672), (1473, 666), (1474, 666)]]
-    pencil = Pencil(pencil_im, points, 3000, FPS, screen)
+    pencil = Pencil(pencil_im, points, 3000, FPS, screen, all_sprites, penciles)
 
     while True:
         for event in pygame.event.get():
@@ -249,7 +251,7 @@ def part_3(screen, size, FPS):
         elif alpha <= 0 and alpha_moving < -1:
             return
         pygame.display.flip()
-        clock.tick(FPS // 4)
+        clock.tick(FPS // 2)
 
 
 def start_cutscene(screen, size, FPS):
