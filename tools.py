@@ -1,6 +1,7 @@
 import sys
 import os
 import pygame
+import sqlite3
 
 
 def load_image(name, colorkey=None):
@@ -31,8 +32,9 @@ def load_continue():
     data['player'], data['monster'] = data_list[0]
     data['items'] = {}
     for i in data_list[1]:
-        data['items'][i[0]] = i[1]
-    data['collected_items'] = [i[0] for i in data_list[2]]
+        if i[0]:
+            data['items'][i[0]] = i[1]
+    data['collected_items'] = [i[0] for i in data_list[2] if i[0]]
     data['flashlight_charge'] = data_list[3][0][0]
     data['batteries_number'] = data_list[3][0][1]
     return data
@@ -56,3 +58,49 @@ def set_default_continue():
 , -
 
 , , заряд фонарика(%) + количество батареек""")
+
+
+def set_continue(data):
+    player = ', '.join([str(i) for i in data['player']])
+    monster = ', '.join([str(i) for i in data['monster']])
+    fl_lig_ch = data['flashlight_charge']
+    batt_num = data['batteries_number']
+    items = '\n'.join([i + ', ' + str(data['items'][i]) + ', ' for i in data['items']])
+    if not items:
+        items = ', , } пложение вещей (класс предмета; id предмета мебели)'
+    else:
+        items = items.split('\n')
+        items = '\n'.join(
+            items[i] + '} пложение вещей (класс предмета; id предмета мебели)' if i == len(items) // 2 else items[i] for
+            i in range(len(items)))
+    col_items = data['collected_items']
+    if len(col_items) == 0:
+        col_items = ', } вещи в инвентаре (класс предмета)'
+    else:
+        col_items = '\n'.join(
+            col_items[i] + ', } вещи в инвентаре (класс предмета)' if i == len(col_items) // 2 else col_items[i] + ', '
+            for i in range(len(col_items)))
+    with open('data/continue.txt', 'w', encoding='UTF-8') as f:
+        f.write(f"""{player}, положение игрока (x; y; этаж) (последний элемент каждой строки - пояснение)
+{monster}, положение монстра (x; y; этаж)
+
+{items}
+
+{col_items}
+
+{fl_lig_ch}, {batt_num}, заряд фонарика(%) + количество батареек""")
+
+
+def load_map():
+    con = sqlite3.connect('data/map.db')
+    cur = con.cursor()
+    data = {}
+    data['furniture'] = cur.execute('select * from furniture').fetchall()
+    data['walls'] = cur.execute('select * from walls').fetchall()
+    data['floor'] = cur.execute('select * from floor').fetchall()
+    con.close()
+    return data
+
+
+if __name__ == '__main__':
+    print(load_map())
