@@ -50,7 +50,7 @@ class Button(pygame.sprite.Sprite):
             if event.type == pygame.MOUSEMOTION:
                 if self.rect.x <= event.pos[0] <= self.rect.x + self.image.get_width() and self.rect.y <= \
                         event.pos[1] <= self.rect.y + self.image.get_height():
-                    if not self.is_current:
+                    if not self.is_current and self.can_be_pressed():
                         self.is_current = True
                         au.eff('click').play()
                 else:

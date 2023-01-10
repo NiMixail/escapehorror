@@ -235,8 +235,10 @@ def game(screen, size, FPS):
     while True:
         keys_pressed = []
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            if event.type == pygame.QUIT:
                 tools.terminate()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                return
             if event.type == pygame.KEYDOWN:
                 keys_pressed += [event.key]
         keys = pygame.key.get_pressed()
