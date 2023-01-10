@@ -129,16 +129,19 @@ class Camera:
     def __init__(self):
         self.dx = 0
         self.dy = 0
+        self.floor = None
 
     def apply(self, obj):
-        obj.rect.x, obj.rect.y = obj.pos  # у каждого объекта есть атрибут pos, где находятся его координаты на карте
-        obj.rect.x += self.dx
-        obj.rect.y += self.dy
+        if obj.floor == self.floor:
+            obj.rect.x, obj.rect.y = obj.pos  # у каждого объекта есть атрибут pos, где находятся его координаты на карте
+            obj.rect.x += self.dx
+            obj.rect.y += self.dy
 
     def pos_on_screen(self, obj):  # возвращает положение объекта на экране
         return (obj.pos[0] + self.dx, obj.pos[1] + self.dy)
 
     def update(self, target, axis):
+        self.floor = target.floor
         if axis == 'ox':
             self.dx = -(target.pos[0] + target.image.get_width() // 2 - width // 2)
         elif axis == 'oy':
@@ -159,8 +162,9 @@ def game(screen, size, FPS):
     player_group = pygame.sprite.Group()
     move_triggers = pygame.sprite.Group()
     camera = Camera()
-    player = Player(50, 50, 1, tools.load_image('player.png', -1), all_sprites, player_group, size, map_size, FPS,
+    player = Player(50, 50, 2, tools.load_image('player.png', -1), all_sprites, player_group, size, map_size, FPS,
                     camera)
+    camera.floor = player.floor
     cant_move_groups = {1: [walls_first_floor], 2: [walls_second_floor]}
     player.move_triggers = {
         'left': Move_Trigger('vert', player, move_triggers, player.pos[0],
@@ -191,12 +195,20 @@ def game(screen, size, FPS):
         keys = pygame.key.get_pressed()
 
         screen.fill((255, 255, 255))
-        floor_first_floor.update()
-        walls_first_floor.update()
+        if player.floor == 1:
+            floor_first_floor.update()
+            walls_first_floor.update()
+        elif player.floor == 2:
+            floor_second_floor.update()
+            walls_second_floor.update()
         player_group.update(keys)
 
-        floor_first_floor.draw(screen)
-        walls_first_floor.draw(screen)
+        if player.floor == 1:
+            floor_first_floor.draw(screen)
+            walls_first_floor.draw(screen)
+        elif player.floor == 2:
+            floor_second_floor.draw(screen)
+            walls_second_floor.draw(screen)
         player_group.draw(screen)
         move_triggers.draw(screen)
 
@@ -207,7 +219,7 @@ def game(screen, size, FPS):
 
 if __name__ == '__main__':
     pygame.init()
-    size = width, height = 1600, 900
+    size = width, height = 1542, 864
     FPS = 60
     screen = pygame.display.set_mode(size)
     game(screen, size, FPS)
