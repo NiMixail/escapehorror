@@ -36,6 +36,23 @@ class Wall(pygame.sprite.Sprite):
         self.cam.apply(self)
 
 
+class Stairs(pygame.sprite.Sprite):
+
+    def __init__(self, id, x, y, fl, im, cam, all_sprites, *groups):
+        super().__init__(all_sprites)
+        self.add(groups)
+        self.id = id
+        self.image = im if im else tools.load_image('furniture\\stairs.png')
+        self.rect = self.image.get_rect()
+        self.pos = (x, y)
+        self.rect.x, self.rect.y = self.pos
+        self.floor = fl
+        self.cam = cam
+
+    def update(self):
+        self.cam.apply(self)
+
+
 class Move_Trigger(pygame.sprite.Sprite):
     def __init__(self, type, mainer, group, x, y, cant_move):
         super().__init__()
@@ -61,7 +78,7 @@ class Move_Trigger(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam):
+    def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam, stairs_group):
         super().__init__(all_sprites)
         self.add(group)
         self.image = im
@@ -76,6 +93,7 @@ class Player(pygame.sprite.Sprite):
         self.fps = fps
         self.cam = cam
         self.move_triggers = {}
+        self.stairs_group = stairs_group
 
     def can_move_down(self):
         return self.move_triggers['down'].can_move()
@@ -91,15 +109,15 @@ class Player(pygame.sprite.Sprite):
 
     def update_move_triggers(self):
         self.move_triggers['down'].rect.x = self.rect.x + self.image.get_width() // 4
-        self.move_triggers['down'].rect.y = self.rect.y + self.image.get_height()
+        self.move_triggers['down'].rect.y = self.rect.y + self.image.get_height() + self.v / self.fps
         self.move_triggers['down'].fl = self.floor
         self.move_triggers['up'].rect.x = self.rect.x + self.image.get_width() // 4
-        self.move_triggers['up'].rect.y = self.rect.y
+        self.move_triggers['up'].rect.y = self.rect.y - self.v / self.fps + 1
         self.move_triggers['up'].fl = self.floor
-        self.move_triggers['right'].rect.x = self.rect.x + self.image.get_width()
+        self.move_triggers['right'].rect.x = self.rect.x + self.image.get_width() + self.v / self.fps
         self.move_triggers['right'].rect.y = self.rect.y + self.image.get_height() // 4
         self.move_triggers['right'].fl = self.floor
-        self.move_triggers['left'].rect.x = self.rect.x
+        self.move_triggers['left'].rect.x = self.rect.x - self.v / self.fps + 1
         self.move_triggers['left'].rect.y = self.rect.y + self.image.get_height() // 4
         self.move_triggers['left'].fl = self.floor
 
@@ -119,14 +137,23 @@ class Player(pygame.sprite.Sprite):
                 self.pos[1] <= self.map_size[self.floor][1] - self.scr_height // 2 - self.image.get_height() // 2:
             self.cam.update(self, 'oy')
 
-    def update(self, keys):
+    def deystvie(self, keys):
+        for key in keys:
+            if key == pygame.K_z and any(
+                    [pygame.sprite.spritecollideany(self.move_triggers[i], self.stairs_group[self.floor]) for i in
+                     self.move_triggers]):
+                self.floor = 1 if self.floor == 2 else 2
+
+    def update(self, keys, keys_pressed):
         self.motion(keys)
+        self.deystvie(keys_pressed)
         self.cam.apply(self)
         self.update_move_triggers()
 
 
 class Camera:
-    def __init__(self):
+    def __init__(self, scr_size):
+        self.scr_width, self.scr_height = scr_size
         self.dx = 0
         self.dy = 0
         self.floor = None
@@ -143,9 +170,9 @@ class Camera:
     def update(self, target, axis):
         self.floor = target.floor
         if axis == 'ox':
-            self.dx = -(target.pos[0] + target.image.get_width() // 2 - width // 2)
+            self.dx = -(target.pos[0] + target.image.get_width() // 2 - self.scr_width // 2)
         elif axis == 'oy':
-            self.dy = -(target.pos[1] + target.image.get_height() // 2 - height // 2)
+            self.dy = -(target.pos[1] + target.image.get_height() // 2 - self.scr_height // 2)
 
 
 def game(screen, size, FPS):
@@ -154,28 +181,38 @@ def game(screen, size, FPS):
     map_size[1] = (4600, 2400)
     map_size[2] = (3200, 1800)
     clock = pygame.time.Clock()
+    # ==============группы_спрайтов=====================================================================================
     all_sprites = pygame.sprite.Group()
     floor_first_floor = pygame.sprite.Group()
     floor_second_floor = pygame.sprite.Group()
     walls_first_floor = pygame.sprite.Group()
     walls_second_floor = pygame.sprite.Group()
+    furniture_first_floor = pygame.sprite.Group()
+    furniture_second_floor = pygame.sprite.Group()
+    stairs_first_floor = pygame.sprite.Group()
+    stairs_second_floor = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
     move_triggers = pygame.sprite.Group()
-    camera = Camera()
-    player = Player(50, 50, 2, tools.load_image('player.png', -1), all_sprites, player_group, size, map_size, FPS,
-                    camera)
+    # ============камера_и_главный_герой================================================================================
+    camera = Camera(size)
+    player = Player(50, 50, 1, tools.load_image('player.png', -1), all_sprites, player_group, size, map_size, FPS,
+                    camera, {1: stairs_first_floor, 2: stairs_second_floor})
     camera.floor = player.floor
-    cant_move_groups = {1: [walls_first_floor], 2: [walls_second_floor]}
+    cant_move_groups = {1: [walls_first_floor, furniture_first_floor], 2: [walls_second_floor, furniture_second_floor]}
     player.move_triggers = {
-        'left': Move_Trigger('vert', player, move_triggers, player.pos[0],
+        'left': Move_Trigger('vert', player, move_triggers, player.pos[0] - player.v / player.fps,
                              player.pos[1] + player.image.get_height() // 4, cant_move_groups),
-        'up': Move_Trigger('hor', player, move_triggers, player.pos[0] + player.image.get_width() // 4, player.pos[1],
+        'up': Move_Trigger('hor', player, move_triggers, player.pos[0] + player.image.get_width() // 4,
+                           player.pos[1] - player.v / player.fps,
                            cant_move_groups),
         'right': Move_Trigger('vert', player, move_triggers,
-                              player.pos[0] + player.image.get_width(), player.pos[1] + player.image.get_height() // 4,
+                              player.pos[0] + player.image.get_width() + player.v / player.fps,
+                              player.pos[1] + player.image.get_height() // 4,
                               cant_move_groups),
         'down': Move_Trigger('hor', player, move_triggers, player.pos[0] + player.image.get_width() // 4,
-                             player.pos[1] + player.image.get_height(), cant_move_groups)}
+                             player.pos[1] + player.image.get_height() + player.v / player.fps, cant_move_groups)}
+    # ======заполлнение_карты===========================================================================================
+    classes = {'Stairs': Stairs}
     map = tools.load_map()
     for floor in map['floor']:
         id, x, y, fl, width, height, image = floor
@@ -188,27 +225,41 @@ def game(screen, size, FPS):
         id, x, y, fl, type, width = wall
         Wall(x, y, fl, type, width, all_sprites, walls_first_floor if fl == 1 else walls_second_floor, camera)
 
+    for item in map['furniture']:
+        id, cl, x, y, fl, unic, im = item
+        classes[cl](id, x, y, fl, im, camera, all_sprites, furniture_first_floor if fl == 1 else furniture_second_floor,
+                    stairs_first_floor if fl == 1 else stairs_second_floor)
+
+    # ==========главный_цикл============================================================================================
+
     while True:
+        keys_pressed = []
         for event in pygame.event.get():
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 tools.terminate()
+            if event.type == pygame.KEYDOWN:
+                keys_pressed += [event.key]
         keys = pygame.key.get_pressed()
 
         screen.fill((255, 255, 255))
         if player.floor == 1:
             floor_first_floor.update()
             walls_first_floor.update()
+            furniture_first_floor.update()
         elif player.floor == 2:
             floor_second_floor.update()
             walls_second_floor.update()
-        player_group.update(keys)
+            furniture_second_floor.update()
+        player_group.update(keys, keys_pressed)
 
         if player.floor == 1:
             floor_first_floor.draw(screen)
             walls_first_floor.draw(screen)
+            furniture_first_floor.draw(screen)
         elif player.floor == 2:
             floor_second_floor.draw(screen)
             walls_second_floor.draw(screen)
+            furniture_second_floor.draw(screen)
         player_group.draw(screen)
         move_triggers.draw(screen)
 

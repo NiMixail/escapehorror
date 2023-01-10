@@ -1,6 +1,7 @@
 import pygame
 from start_cutscene import start_cutscene
 from start_screen import start_screen
+from game import  game
 
 
 def game_test(a, b):
@@ -19,7 +20,7 @@ if __name__ == '__main__':
     FPS = 60
     start_cutscene(screen, size, FPS)
     while True:
-        start_screen(screen, size, FPS, game_test, [1, 2], continue_test, [1, 2])
+        start_screen(screen, size, FPS, game, [screen, size, FPS], continue_test, [1, 2])
         # start_screen(screen, size, FPS, game, game_args, continue, continue_args), где:
         #     game - функция самого процесса игры; game_args - её аргументы
         #     continue - функция процесса сохранённой игры; сontinue_args - её аргументы
