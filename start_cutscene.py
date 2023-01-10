@@ -64,7 +64,6 @@ def part_1(screen, size, FPS):
         clock.tick(FPS)
 
 
-
 class Background(pygame.sprite.Sprite):
     def __init__(self, image, all_sprites, group):
         super().__init__(all_sprites)
@@ -212,7 +211,10 @@ def part_2(screen, size, FPS):
          (1427, 757), (1428, 764), (1427, 761), (1435, 752), (1440, 745), (1445, 726), (1445, 716), (1458, 697),
          (1465, 688), (1466, 680), (1470, 672), (1473, 666), (1474, 666)]]
     pencil = Pencil(pencil_im, points, 3000, FPS, screen, all_sprites, penciles)
+
+    au.eff('mixser').stop()
     au.eff('pencil').play()
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -238,7 +240,10 @@ def part_3(screen, size, FPS):
     font_sur = font.render("SCARY SMILE", True, (255, 0, 0))
     font_sur.set_alpha(alpha)
 
+    au.eff('pencil').stop()
+    au.eff('fortepiano_strike').set_volume(500)
     au.eff('fortepiano_strike').play()
+
     clock = pygame.time.Clock()
     while True:
         for event in pygame.event.get():

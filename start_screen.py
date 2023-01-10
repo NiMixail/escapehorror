@@ -1,6 +1,9 @@
 import pygame
 
 from tools import load_image, terminate
+from sounds import Audio
+
+au = Audio()
 
 
 def play(a, b):
@@ -47,7 +50,9 @@ class Button(pygame.sprite.Sprite):
             if event.type == pygame.MOUSEMOTION:
                 if self.rect.x <= event.pos[0] <= self.rect.x + self.image.get_width() and self.rect.y <= \
                         event.pos[1] <= self.rect.y + self.image.get_height():
-                    self.is_current = True
+                    if not self.is_current:
+                        self.is_current = True
+                        au.eff('click').play()
                 else:
                     self.is_current = False
         if not self.can_be_pressed():
@@ -74,8 +79,9 @@ def start_screen(screen, size, FPS, play, play_args, continue_play, continue_pla
 
     windows = []
     background_im, pl_b_im, cont_pl_b_im, ex_b_im = load_image('start_screen/background.png'), \
-        load_image('start_screen/play_button.png', -1), load_image('start_screen/continue_button.png', -1), \
-        load_image('start_screen/exit_button.png', -1)
+                                                    load_image('start_screen/play_button.png', -1), load_image(
+        'start_screen/continue_button.png', -1), \
+                                                    load_image('start_screen/exit_button.png', -1)
     Background(background_im, all_sprites, backgroundes)
     interval = 5
     play_button = Button(pl_b_im, all_sprites, buttons, WIDTH // 2 - pl_b_im.get_width() // 2,
