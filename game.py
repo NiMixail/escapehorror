@@ -42,7 +42,7 @@ class Stairs(pygame.sprite.Sprite):
         super().__init__(all_sprites)
         self.add(groups)
         self.id = id
-        self.image = im if im else tools.load_image('furniture\\stairs.png')
+        self.image = im
         self.rect = self.image.get_rect()
         self.pos = (x, y)
         self.rect.x, self.rect.y = self.pos
@@ -213,6 +213,7 @@ def game(screen, size, FPS):
                              player.pos[1] + player.image.get_height() + player.v / player.fps, cant_move_groups)}
     # ======заполлнение_карты===========================================================================================
     classes = {'Stairs': Stairs}
+    images = {'Stairs': tools.load_image('furniture\\stairs.jpg')}
     map = tools.load_map()
     for floor in map['floor']:
         id, x, y, fl, width, height, image = floor
@@ -227,6 +228,7 @@ def game(screen, size, FPS):
 
     for item in map['furniture']:
         id, cl, x, y, fl, unic, im = item
+        im = im if im else images[cl]
         classes[cl](id, x, y, fl, im, camera, all_sprites, furniture_first_floor if fl == 1 else furniture_second_floor,
                     stairs_first_floor if fl == 1 else stairs_second_floor)
 
