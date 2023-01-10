@@ -38,7 +38,7 @@ class Wall(pygame.sprite.Sprite):
 
 class Stairs(pygame.sprite.Sprite):
 
-    def __init__(self, id, x, y, fl, im, cam, all_sprites, *groups):
+    def __init__(self, id, x, y, pose, fl, im, cam, player, all_sprites, *groups):
         super().__init__(all_sprites)
         self.add(groups)
         self.id = id
@@ -48,16 +48,53 @@ class Stairs(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = self.pos
         self.floor = fl
         self.cam = cam
+        self.player = player
 
     def update(self):
+        if self.player.z_pressed and self.player.collide_with(self):
+            self.player.floor = 1 if self.player.floor == 2 else 2
         self.cam.apply(self)
+
+
+class Furniture_that_can_be_opened(pygame.sprite.Sprite):
+    def __init__(self, id, x, y, pose, fl, im, cam, player, all_sprites, *groups):
+        super().__init__(all_sprites)
+        self.add(groups)
+        self.id = id
+        self.image_closed, self.image_opened = im
+        self.image_closed = pygame.transform.rotate(self.image_closed, pose)
+        self.image_opened = pygame.transform.rotate(self.image_opened, pose)
+        self.image = self.image_closed
+        self.rect = self.image.get_rect()
+        self.pos = (x, y)
+        self.rect.x, self.rect.y = self.pos
+        self.floor = fl
+        self.cam = cam
+        self.player = player
+        self.opened = False
+
+    def open_close(self):
+        self.image = self.image_opened if self.image == self.image_closed else self.image_closed
+
+    def update(self):
+        if self.player.z_pressed and self.player.collide_with(self) and not self.opened:
+            self.open_close()
+        self.cam.apply(self)
+
+
+class Table(pygame.sprite.Sprite):
+    pass
+
+
+class Chair(pygame.sprite.Sprite):
+    pass
 
 
 class Move_Trigger(pygame.sprite.Sprite):
     def __init__(self, type, mainer, group, x, y, cant_move):
         super().__init__()
         self.add(group)
-        size = (1, mainer.image.get_height() // 2) if type == 'vert' else (mainer.image.get_width() // 2, 1)
+        size = (1, mainer.image.get_height() - 8) if type == 'vert' else (mainer.image.get_width() - 8, 1)
         self.image = pygame.Surface(size)
         self.image.fill((255, 0, 0))
         self.rect = self.image.get_rect()
@@ -78,7 +115,7 @@ class Move_Trigger(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam, stairs_group):
+    def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam):
         super().__init__(all_sprites)
         self.add(group)
         self.image = im
@@ -93,7 +130,7 @@ class Player(pygame.sprite.Sprite):
         self.fps = fps
         self.cam = cam
         self.move_triggers = {}
-        self.stairs_group = stairs_group
+        self.z_pressed = False
 
     def can_move_down(self):
         return self.move_triggers['down'].can_move()
@@ -108,18 +145,23 @@ class Player(pygame.sprite.Sprite):
         return self.move_triggers['left'].can_move()
 
     def update_move_triggers(self):
-        self.move_triggers['down'].rect.x = self.rect.x + self.image.get_width() // 4
+        self.move_triggers['down'].rect.x = self.rect.x + 4
         self.move_triggers['down'].rect.y = self.rect.y + self.image.get_height() + self.v / self.fps
         self.move_triggers['down'].fl = self.floor
-        self.move_triggers['up'].rect.x = self.rect.x + self.image.get_width() // 4
+        self.move_triggers['up'].rect.x = self.rect.x + 4
         self.move_triggers['up'].rect.y = self.rect.y - self.v / self.fps + 1
         self.move_triggers['up'].fl = self.floor
         self.move_triggers['right'].rect.x = self.rect.x + self.image.get_width() + self.v / self.fps
-        self.move_triggers['right'].rect.y = self.rect.y + self.image.get_height() // 4
+        self.move_triggers['right'].rect.y = self.rect.y + 4
         self.move_triggers['right'].fl = self.floor
         self.move_triggers['left'].rect.x = self.rect.x - self.v / self.fps + 1
-        self.move_triggers['left'].rect.y = self.rect.y + self.image.get_height() // 4
+        self.move_triggers['left'].rect.y = self.rect.y + 4
         self.move_triggers['left'].fl = self.floor
+
+    def collide_with(self, obj):
+        if any([pygame.sprite.collide_rect(self.move_triggers[i], obj) for i in self.move_triggers]):
+            return True
+        return False
 
     def motion(self, keys):
         if keys[pygame.K_DOWN] and self.can_move_down():
@@ -139,12 +181,11 @@ class Player(pygame.sprite.Sprite):
 
     def deystvie(self, keys):
         for key in keys:
-            if key == pygame.K_z and any(
-                    [pygame.sprite.spritecollideany(self.move_triggers[i], self.stairs_group[self.floor]) for i in
-                     self.move_triggers]):
-                self.floor = 1 if self.floor == 2 else 2
+            if key == pygame.K_z:
+                self.z_pressed = True
 
     def update(self, keys, keys_pressed):
+        self.z_pressed = False
         self.motion(keys)
         self.deystvie(keys_pressed)
         self.cam.apply(self)
@@ -191,29 +232,45 @@ def game(screen, size, FPS):
     furniture_second_floor = pygame.sprite.Group()
     stairs_first_floor = pygame.sprite.Group()
     stairs_second_floor = pygame.sprite.Group()
+    furniture_that_can_be_opened_first_floor = pygame.sprite.Group()
+    furniture_that_can_be_opened_second_floor = pygame.sprite.Group()
+    chairs_first_floor = pygame.sprite.Group()
+    chairs_second_floor = pygame.sprite.Group()
+    tables_first_floor = pygame.sprite.Group()
+    tables_second_floor = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
     move_triggers = pygame.sprite.Group()
     # ============камера_и_главный_герой================================================================================
     camera = Camera(size)
     player = Player(50, 50, 1, tools.load_image('player.png', -1), all_sprites, player_group, size, map_size, FPS,
-                    camera, {1: stairs_first_floor, 2: stairs_second_floor})
+                    camera)
     camera.floor = player.floor
     cant_move_groups = {1: [walls_first_floor, furniture_first_floor], 2: [walls_second_floor, furniture_second_floor]}
     player.move_triggers = {
         'left': Move_Trigger('vert', player, move_triggers, player.pos[0] - player.v / player.fps,
-                             player.pos[1] + player.image.get_height() // 4, cant_move_groups),
-        'up': Move_Trigger('hor', player, move_triggers, player.pos[0] + player.image.get_width() // 4,
+                             player.pos[1] + 4, cant_move_groups),
+        'up': Move_Trigger('hor', player, move_triggers, player.pos[0] + 4,
                            player.pos[1] - player.v / player.fps,
                            cant_move_groups),
         'right': Move_Trigger('vert', player, move_triggers,
                               player.pos[0] + player.image.get_width() + player.v / player.fps,
-                              player.pos[1] + player.image.get_height() // 4,
+                              player.pos[1] + 4,
                               cant_move_groups),
-        'down': Move_Trigger('hor', player, move_triggers, player.pos[0] + player.image.get_width() // 4,
+        'down': Move_Trigger('hor', player, move_triggers, player.pos[0] + 4,
                              player.pos[1] + player.image.get_height() + player.v / player.fps, cant_move_groups)}
     # ======заполлнение_карты===========================================================================================
-    classes = {'Stairs': Stairs}
-    images = {'Stairs': tools.load_image('furniture\\stairs.jpg')}
+    classes = {'Stairs': Stairs, 'Cupboard': Furniture_that_can_be_opened,
+               'Glass_Cupboard': Furniture_that_can_be_opened, 'Shelf': Furniture_that_can_be_opened,
+               'Chair': Chair, 'Table': Table}
+    images = {'Stairs': tools.load_image('furniture\\stairs.jpg'), 'Cupboard': (
+        tools.load_image('furniture\\cupboard.png', -1), tools.load_image('furniture\\cupboard_opened.png', -1))}
+    groups = {'Stairs': {1: stairs_first_floor, 2: stairs_second_floor},
+              'Cupboard': {1: furniture_that_can_be_opened_first_floor, 2: furniture_that_can_be_opened_second_floor},
+              'Glass_Cupboard': {1: furniture_that_can_be_opened_first_floor,
+                                 2: furniture_that_can_be_opened_second_floor},
+              'Shelf': {1: furniture_that_can_be_opened_first_floor, 2: furniture_that_can_be_opened_second_floor},
+              'Chair': {1: chairs_first_floor, 2: chairs_second_floor},
+              'Table': {1: tables_first_floor, 2: tables_second_floor}}
     map = tools.load_map()
     for floor in map['floor']:
         id, x, y, fl, width, height, image = floor
@@ -227,10 +284,11 @@ def game(screen, size, FPS):
         Wall(x, y, fl, type, width, all_sprites, walls_first_floor if fl == 1 else walls_second_floor, camera)
 
     for item in map['furniture']:
-        id, cl, x, y, fl, unic, im = item
+        id, cl, x, y, pose, fl, unic, im = item
         im = im if im else images[cl]
-        classes[cl](id, x, y, fl, im, camera, all_sprites, furniture_first_floor if fl == 1 else furniture_second_floor,
-                    stairs_first_floor if fl == 1 else stairs_second_floor)
+        group = groups[cl][fl]
+        classes[cl](id, x, y, pose, fl, im, camera, player, all_sprites,
+                    furniture_first_floor if fl == 1 else furniture_second_floor, group)
 
     # ==========главный_цикл============================================================================================
 
@@ -246,6 +304,7 @@ def game(screen, size, FPS):
         keys = pygame.key.get_pressed()
 
         screen.fill((255, 255, 255))
+        player_group.update(keys, keys_pressed)
         if player.floor == 1:
             floor_first_floor.update()
             walls_first_floor.update()
@@ -254,7 +313,6 @@ def game(screen, size, FPS):
             floor_second_floor.update()
             walls_second_floor.update()
             furniture_second_floor.update()
-        player_group.update(keys, keys_pressed)
 
         if player.floor == 1:
             floor_first_floor.draw(screen)
