@@ -92,15 +92,18 @@ class Player(pygame.sprite.Sprite):
     def update_move_triggers(self):
         self.move_triggers['down'].rect.x = self.rect.x + self.image.get_width() // 4
         self.move_triggers['down'].rect.y = self.rect.y + self.image.get_height()
+        self.move_triggers['down'].fl = self.floor
         self.move_triggers['up'].rect.x = self.rect.x + self.image.get_width() // 4
         self.move_triggers['up'].rect.y = self.rect.y
+        self.move_triggers['up'].fl = self.floor
         self.move_triggers['right'].rect.x = self.rect.x + self.image.get_width()
         self.move_triggers['right'].rect.y = self.rect.y + self.image.get_height() // 4
+        self.move_triggers['right'].fl = self.floor
         self.move_triggers['left'].rect.x = self.rect.x
         self.move_triggers['left'].rect.y = self.rect.y + self.image.get_height() // 4
+        self.move_triggers['left'].fl = self.floor
 
     def motion(self, keys):
-        motion = (None, None)
         if keys[pygame.K_DOWN] and self.can_move_down():
             self.pos[1] += self.v / self.fps
         if keys[pygame.K_UP] and self.can_move_up():
@@ -109,7 +112,12 @@ class Player(pygame.sprite.Sprite):
             self.pos[0] += self.v / self.fps
         if keys[pygame.K_LEFT] and self.can_move_left():
             self.pos[0] -= self.v / self.fps
-        self.cam.update(self)
+        if self.scr_width // 2 - self.image.get_width() // 2 <= self.pos[0] <= self.map_size[self.floor][
+            0] - self.scr_width // 2 - self.image.get_width() // 2:
+            self.cam.update(self, 'ox')
+        if self.scr_height // 2 - self.image.get_height() // 2 <= \
+                self.pos[1] <= self.map_size[self.floor][1] - self.scr_height // 2 - self.image.get_height() // 2:
+            self.cam.update(self, 'oy')
 
     def update(self, keys):
         self.motion(keys)
@@ -130,9 +138,11 @@ class Camera:
     def pos_on_screen(self, obj):  # возвращает положение объекта на экране
         return (obj.pos[0] + self.dx, obj.pos[1] + self.dy)
 
-    def update(self, target):
-        self.dx = -(target.pos[0] + target.image.get_width() // 2 - width // 2)
-        self.dy = -(target.pos[1] + target.image.get_height() // 2 - height // 2)
+    def update(self, target, axis):
+        if axis == 'ox':
+            self.dx = -(target.pos[0] + target.image.get_width() // 2 - width // 2)
+        elif axis == 'oy':
+            self.dy = -(target.pos[1] + target.image.get_height() // 2 - height // 2)
 
 
 def game(screen, size, FPS):
