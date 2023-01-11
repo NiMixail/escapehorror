@@ -1,5 +1,6 @@
 import pygame
 import tools
+import random
 
 
 class Floor(pygame.sprite.Sprite):
@@ -51,7 +52,7 @@ class Stairs(pygame.sprite.Sprite):
         self.player = player
 
     def update(self):
-        if self.player.z_pressed and self.player.collide_with(self):
+        if self.player.z_pressed and self.player.can_use(self):
             self.player.floor = 1 if self.player.floor == 2 else 2
         self.cam.apply(self)
 
@@ -71,14 +72,31 @@ class Furniture_that_can_be_opened(pygame.sprite.Sprite):
         self.floor = fl
         self.cam = cam
         self.player = player
-        self.opened = False
+        self.item = None
+        self.image_with_item = None
 
-    def open_close(self):
-        self.image = self.image_opened if self.image == self.image_closed else self.image_closed
+    def set_image_with_item(self):
+        image_opened = self.image_opened.copy()
+        image_opened.blit(self.item.image, (
+        image_opened.get_width() * 3 // 4 - self.item.image.get_width() // 2,
+        image_opened.get_height() * 3 // 4 - self.item.image.get_height() // 2))
+        self.image_with_item = image_opened
+
+    def func(self):
+        if self.image == self.image_closed:
+            self.image = self.image_opened
+            if self.item:
+                self.image = self.image_with_item
+        elif self.item:
+            self.player.items += [self.item]
+            self.item = None
+            self.image = self.image_opened
+        else:
+            self.image = self.image_closed
 
     def update(self):
-        if self.player.z_pressed and self.player.collide_with(self) and not self.opened:
-            self.open_close()
+        if self.player.z_pressed and self.player.can_use(self):
+            self.func()
         self.cam.apply(self)
 
 
@@ -88,6 +106,13 @@ class Table(pygame.sprite.Sprite):
 
 class Chair(pygame.sprite.Sprite):
     pass
+
+
+class Item(pygame.sprite.Sprite):
+    def __init__(self, image, all_sprites, group):
+        super().__init__(all_sprites)
+        self.add(group)
+        self.image = image
 
 
 class Move_Trigger(pygame.sprite.Sprite):
@@ -114,6 +139,24 @@ class Move_Trigger(pygame.sprite.Sprite):
         return True
 
 
+class Interaction_Trigger(pygame.sprite.Sprite):
+    def __init__(self, mainer, group, x, y):
+        super().__init__()
+        self.add(group)
+        self.image = pygame.Surface((mainer.image.get_width() * 2, mainer.image.get_height() * 2))
+        self.image.fill((255, 255, 255))
+        self.image.set_alpha(100)
+        self.rect = self.image.get_rect()
+        self.rect.x, self.rect.y = x, y
+        self.fl = mainer.floor
+
+    def hide(self):
+        self.image.set_alpha(0)
+
+    def show(self):
+        self.image.set_alpha(100)
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam):
         super().__init__(all_sprites)
@@ -130,7 +173,9 @@ class Player(pygame.sprite.Sprite):
         self.fps = fps
         self.cam = cam
         self.move_triggers = {}
+        self.interaction_trigger = None
         self.z_pressed = False
+        self.items = []
 
     def can_move_down(self):
         return self.move_triggers['down'].can_move()
@@ -158,8 +203,13 @@ class Player(pygame.sprite.Sprite):
         self.move_triggers['left'].rect.y = self.rect.y + 4
         self.move_triggers['left'].fl = self.floor
 
-    def collide_with(self, obj):
-        if any([pygame.sprite.collide_rect(self.move_triggers[i], obj) for i in self.move_triggers]):
+    def update_interaction_trigger(self):
+        self.interaction_trigger.rect.x = self.rect.x - self.image.get_width() // 2
+        self.interaction_trigger.rect.y = self.rect.y - self.image.get_height() // 2
+        self.interaction_trigger.fl = self.floor
+
+    def can_use(self, obj):
+        if pygame.sprite.collide_rect(self.interaction_trigger, obj):
             return True
         return False
 
@@ -190,6 +240,7 @@ class Player(pygame.sprite.Sprite):
         self.deystvie(keys_pressed)
         self.cam.apply(self)
         self.update_move_triggers()
+        self.update_interaction_trigger()
 
 
 class Camera:
@@ -224,10 +275,12 @@ def game(screen, size, FPS):
     clock = pygame.time.Clock()
     # ==============группы_спрайтов=====================================================================================
     all_sprites = pygame.sprite.Group()
+
     floor_first_floor = pygame.sprite.Group()
     floor_second_floor = pygame.sprite.Group()
     walls_first_floor = pygame.sprite.Group()
     walls_second_floor = pygame.sprite.Group()
+
     furniture_first_floor = pygame.sprite.Group()
     furniture_second_floor = pygame.sprite.Group()
     stairs_first_floor = pygame.sprite.Group()
@@ -238,8 +291,11 @@ def game(screen, size, FPS):
     chairs_second_floor = pygame.sprite.Group()
     tables_first_floor = pygame.sprite.Group()
     tables_second_floor = pygame.sprite.Group()
+
+    items = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
     move_triggers = pygame.sprite.Group()
+    interaction_triggers = pygame.sprite.Group()
     # ============камера_и_главный_герой================================================================================
     camera = Camera(size)
     player = Player(50, 50, 1, tools.load_image('player.png', -1), all_sprites, player_group, size, map_size, FPS,
@@ -258,6 +314,9 @@ def game(screen, size, FPS):
                               cant_move_groups),
         'down': Move_Trigger('hor', player, move_triggers, player.pos[0] + 4,
                              player.pos[1] + player.image.get_height() + player.v / player.fps, cant_move_groups)}
+    player.interaction_trigger = Interaction_Trigger(player, interaction_triggers,
+                                                     player.pos[0] - player.image.get_width() // 2,
+                                                     player.pos[1] - player.image.get_height() // 2)
     # ======заполлнение_карты===========================================================================================
     classes = {'Stairs': Stairs, 'Cupboard': Furniture_that_can_be_opened,
                'Glass_Cupboard': Furniture_that_can_be_opened, 'Shelf': Furniture_that_can_be_opened,
@@ -282,14 +341,20 @@ def game(screen, size, FPS):
     for wall in map['walls']:
         id, x, y, fl, type, width = wall
         Wall(x, y, fl, type, width, all_sprites, walls_first_floor if fl == 1 else walls_second_floor, camera)
-
-    for item in map['furniture']:
-        id, cl, x, y, pose, fl, unic, im = item
+    furniture_that_can_have_item = []
+    for i in map['furniture']:
+        id, cl, x, y, pose, fl, unic, im = i
         im = im if im else images[cl]
         group = groups[cl][fl]
-        classes[cl](id, x, y, pose, fl, im, camera, player, all_sprites,
-                    furniture_first_floor if fl == 1 else furniture_second_floor, group)
-
+        furn = classes[cl](id, x, y, pose, fl, im, camera, player, all_sprites,
+                           furniture_first_floor if fl == 1 else furniture_second_floor, group)
+        if classes[cl] == Furniture_that_can_be_opened:
+            furniture_that_can_have_item += [furn]
+    # ===============предметы===========================================================================================
+    hammer = Item(tools.load_image('items\\hammer.png', -1), all_sprites, items)
+    hammer_mainer = random.choice(furniture_that_can_have_item)
+    hammer_mainer.item = hammer
+    hammer_mainer.set_image_with_item()
     # ==========главный_цикл============================================================================================
 
     while True:
@@ -324,6 +389,7 @@ def game(screen, size, FPS):
             furniture_second_floor.draw(screen)
         player_group.draw(screen)
         move_triggers.draw(screen)
+        interaction_triggers.draw(screen)
 
         clock.tick(FPS)
         pygame.display.flip()
