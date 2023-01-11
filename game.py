@@ -502,6 +502,6 @@ def game(screen, size, FPS):
 if __name__ == '__main__':
     pygame.init()
     size = width, height = 1542, 864
-    FPS = 60
+    FPS = 120
     screen = pygame.display.set_mode(size)
     game(screen, size, FPS)
