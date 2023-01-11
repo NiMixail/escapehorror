@@ -1,6 +1,7 @@
 import pygame
 import tools
 import random
+import math
 
 
 class Floor(pygame.sprite.Sprite):
@@ -43,7 +44,13 @@ class Stairs(pygame.sprite.Sprite):
         super().__init__(all_sprites)
         self.add(groups)
         self.id = id
-        self.image = im
+        self.image_normal = im
+        self.image = self.image_normal
+        self.cur_color = pygame.Color('yellow')
+        self.cur_rect = (0, 0, self.image.get_width(), self.image.get_height())
+        im_cur = self.image.copy()
+        pygame.draw.rect(im_cur, self.cur_color, self.cur_rect, 1)
+        self.image_current = im_cur
         self.rect = self.image.get_rect()
         self.pos = (x, y)
         self.rect.x, self.rect.y = self.pos
@@ -51,7 +58,34 @@ class Stairs(pygame.sprite.Sprite):
         self.cam = cam
         self.player = player
 
+    def is_current_check(self):
+        if self.player.can_use(self):
+            if self.player.current_object is None:
+                self.player.current_object = self
+            else:
+                another_obj = self.player.current_object
+                player_centre = (self.player.pos[0] + self.player.image.get_width() // 2,
+                                 self.player.pos[1] + self.player.image.get_height() // 2)
+                centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image.get_height() // 2)
+                another_centre = (another_obj.pos[0] + another_obj.image.get_width() // 2,
+                                  another_obj.pos[1] + another_obj.image.get_height() // 2)
+                distance = int(math.sqrt((player_centre[0] - centre[0]) ** 2 + (player_centre[1] - centre[1]) ** 2))
+                another_distance = int(math.sqrt(
+                    (player_centre[0] - another_centre[0]) ** 2 + (player_centre[1] - another_centre[1]) ** 2))
+                if distance <= another_distance:
+                    self.player.current_object = self
+        elif self.player.current_object == self:
+            self.player.current_object = None
+
+    def current_image_change(self):
+        if self.player.current_object == self:
+            self.image = self.image_current
+        else:
+            self.image = self.image_normal
+
     def update(self):
+        self.is_current_check()
+        self.current_image_change()
         if self.player.z_pressed and self.player.can_use(self):
             self.player.floor = 1 if self.player.floor == 2 else 2
         self.cam.apply(self)
@@ -63,9 +97,18 @@ class Furniture_that_can_be_opened(pygame.sprite.Sprite):
         self.add(groups)
         self.id = id
         self.image_closed, self.image_opened = im
-        self.image_closed = pygame.transform.rotate(self.image_closed, pose)
-        self.image_opened = pygame.transform.rotate(self.image_opened, pose)
+        if pose:
+            self.image_closed = pygame.transform.rotate(self.image_closed, pose)
+            self.image_opened = pygame.transform.rotate(self.image_opened, pose)
         self.image = self.image_closed
+        self.cur_color = pygame.Color('yellow')
+        self.cur_rect = (0, 0, self.image.get_width(), self.image.get_height())
+        image_current_opened = self.image_opened.copy()
+        pygame.draw.rect(image_current_opened, self.cur_color, self.cur_rect, 1)
+        self.image_current_opened = image_current_opened
+        image_current_closed = self.image_closed.copy()
+        pygame.draw.rect(image_current_closed, self.cur_color, self.cur_rect, 1)
+        self.image_current_closed = image_current_closed
         self.rect = self.image.get_rect()
         self.pos = (x, y)
         self.rect.x, self.rect.y = self.pos
@@ -74,28 +117,77 @@ class Furniture_that_can_be_opened(pygame.sprite.Sprite):
         self.player = player
         self.item = None
         self.image_with_item = None
+        self.image_current_with_item = None
+        self.status = 'closed'
 
     def set_image_with_item(self):
         image_opened = self.image_opened.copy()
         image_opened.blit(self.item.image, (
-        image_opened.get_width() * 3 // 4 - self.item.image.get_width() // 2,
-        image_opened.get_height() * 3 // 4 - self.item.image.get_height() // 2))
+            image_opened.get_width() // 2 - self.item.image.get_width() // 2,
+            image_opened.get_height() // 2 - self.item.image.get_height() // 2))
         self.image_with_item = image_opened
+        image_current_with_item = image_opened.copy()
+        rect = (self.image_opened.get_width() // 2 - self.item.image.get_width() // 2,
+                image_opened.get_height() // 2 - self.item.image.get_height() // 2, self.item.image.get_width(),
+                self.item.image.get_height())
+        pygame.draw.rect(image_current_with_item, self.cur_color, rect, 1)
+        self.image_current_with_item = image_current_with_item
 
     def func(self):
-        if self.image == self.image_closed:
+        if self.status == 'closed':
             self.image = self.image_opened
+            self.status = 'opened'
             if self.item:
                 self.image = self.image_with_item
+                self.status = 'opened_with_item'
         elif self.item:
             self.player.items += [self.item]
             self.item = None
             self.image = self.image_opened
+            self.status = 'opened'
         else:
             self.image = self.image_closed
+            self.status = 'closed'
+
+    def is_current_check(self):
+        if self.player.can_use(self):
+            if self.player.current_object is None:
+                self.player.current_object = self
+            else:
+                another_obj = self.player.current_object
+                player_centre = (self.player.pos[0] + self.player.image.get_width() // 2,
+                                 self.player.pos[1] + self.player.image.get_height() // 2)
+                centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image.get_height() // 2)
+                another_centre = (another_obj.pos[0] + another_obj.image.get_width() // 2,
+                                  another_obj.pos[1] + another_obj.image.get_height() // 2)
+                distance = int(math.sqrt((player_centre[0] - centre[0]) ** 2 + (player_centre[1] - centre[1]) ** 2))
+                another_distance = int(math.sqrt(
+                    (player_centre[0] - another_centre[0]) ** 2 + (player_centre[1] - another_centre[1]) ** 2))
+                if distance <= another_distance:
+                    self.player.current_object = self
+        elif self.player.current_object == self:
+            self.player.current_object = None
+
+    def current_image_change(self):
+        if self.player.current_object == self:
+            if self.status == 'closed':
+                self.image = self.image_current_closed
+            elif self.status == 'opened_with_item':
+                self.image = self.image_current_with_item
+            elif self.status == 'opened':
+                self.image = self.image_current_opened
+        else:
+            if self.status == 'closed':
+                self.image = self.image_closed
+            elif self.status == 'opened':
+                self.image = self.image_opened
+            elif self.status == 'opened_with_item':
+                self.image = self.image_with_item
 
     def update(self):
-        if self.player.z_pressed and self.player.can_use(self):
+        self.is_current_check()
+        self.current_image_change()
+        if self.player.z_pressed and self.player.current_object == self:
             self.func()
         self.cam.apply(self)
 
@@ -109,10 +201,11 @@ class Chair(pygame.sprite.Sprite):
 
 
 class Item(pygame.sprite.Sprite):
-    def __init__(self, image, all_sprites, group):
+    def __init__(self, name, image, all_sprites, group):
         super().__init__(all_sprites)
         self.add(group)
         self.image = image
+        self.name = name
 
 
 class Move_Trigger(pygame.sprite.Sprite):
@@ -176,6 +269,7 @@ class Player(pygame.sprite.Sprite):
         self.interaction_trigger = None
         self.z_pressed = False
         self.items = []
+        self.current_object = None
 
     def can_move_down(self):
         return self.move_triggers['down'].can_move()
@@ -351,10 +445,19 @@ def game(screen, size, FPS):
         if classes[cl] == Furniture_that_can_be_opened:
             furniture_that_can_have_item += [furn]
     # ===============предметы===========================================================================================
-    hammer = Item(tools.load_image('items\\hammer.png', -1), all_sprites, items)
-    hammer_mainer = random.choice(furniture_that_can_have_item)
+    hammer = Item('hammer', tools.load_image('items\\hammer.png', -1), all_sprites, items)
+    red_key = Item('red_key', tools.load_image('items\\red_key.png', -1), all_sprites, items)
+    blue_key = Item('blue_key', tools.load_image('items\\blue_key.png', -1), all_sprites, items)
+    green_key = Item('green_key', tools.load_image('items\\green_key.png', -1), all_sprites, items)
+    hammer_mainer, red_key_mainer, blue_key_mainer, green_key_mainer = random.sample(furniture_that_can_have_item, 4)
     hammer_mainer.item = hammer
     hammer_mainer.set_image_with_item()
+    red_key_mainer.item = red_key
+    red_key_mainer.set_image_with_item()
+    blue_key_mainer.item = blue_key
+    blue_key_mainer.set_image_with_item()
+    green_key_mainer.item = green_key
+    green_key_mainer.set_image_with_item()
     # ==========главный_цикл============================================================================================
 
     while True:
