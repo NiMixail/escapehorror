@@ -250,6 +250,7 @@ def part_3(screen, size, FPS):
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 terminate()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                au.eff('fortepiano_strike').stop()
                 return
         screen.fill((0, 0, 0))
         alpha += alpha_moving

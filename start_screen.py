@@ -108,6 +108,7 @@ def start_screen(screen, size, FPS, play, play_args, continue_play, continue_pla
                         return button.func(*button.func_args)
             buttons.update(event)
         screen.fill((0, 0, 0))
+        buttons.update()
         backgroundes.draw(screen)
         buttons.draw(screen)
         pygame.display.flip()
