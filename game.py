@@ -407,6 +407,16 @@ class Player(pygame.sprite.Sprite):
         else:
             self.image.set_alpha(255)
 
+    def draw_inventar(self):
+        if len(self.items) > 0:
+            x_pos = self.scr_width - max([i.image.get_width() for i in self.items]) - 10
+            y_pos = 10
+            y_interval = max([i.image.get_height() for i in self.items]) + 5
+            for item in self.items:
+                screen.blit(item.image, (x_pos, y_pos))
+                y_pos += y_interval
+
+
     def update(self, keys, keys_pressed):
         self.z_pressed = False
         self.motion(keys)
@@ -579,6 +589,7 @@ def game(screen, size, FPS):
         player_group.draw(screen)
         move_triggers.draw(screen)
         interaction_triggers.draw(screen)
+        player.draw_inventar()
 
         clock.tick(FPS)
         pygame.display.flip()
