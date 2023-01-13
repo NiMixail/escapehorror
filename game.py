@@ -271,6 +271,82 @@ class Door(pygame.sprite.Sprite):
         self.cam.apply(self)
 
 
+class Door_locked(pygame.sprite.Sprite):
+    def __init__(self, id, x, y, pose, fl, im, door_args, color, cam, player, all_sprites, *groups):
+        super().__init__(all_sprites)
+        self.add(groups)
+        self.id = id
+        self.image_normal = im
+
+        if pose:
+            self.image_normal = pygame.transform.rotate(self.image_normal, pose)
+        self.pose = pose
+        cur_color = pygame.Color('yellow')
+        cur_rect = (0, 0, self.image_normal.get_width(), self.image_normal.get_height())
+        im_cur = self.image_normal.copy()
+        pygame.draw.rect(im_cur, cur_color, cur_rect, 1)
+        self.image_current = im_cur
+        self.image = self.image_normal
+        self.rect = self.image.get_rect()
+        self.pos = self.rect.x, self.rect.y = x, y
+        self.floor = fl
+        self.cam = cam
+        self.player = player
+        self.color = color
+        self.door_args = door_args
+
+    def is_current_check(self):
+        if self.player.can_use(self):
+            if self.player.current_object is None:
+                self.player.current_object = self
+            elif not self.player.is_hidden:
+                another_obj = self.player.current_object
+                player_centre = (self.player.pos[0] + self.player.image.get_width() // 2,
+                                 self.player.pos[1] + self.player.image.get_height() // 2)
+                centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image.get_height() // 2)
+                another_centre = (another_obj.pos[0] + another_obj.image.get_width() // 2,
+                                  another_obj.pos[1] + another_obj.image.get_height() // 2)
+                distance = int(math.sqrt((player_centre[0] - centre[0]) ** 2 + (player_centre[1] - centre[1]) ** 2))
+                another_distance = int(math.sqrt(
+                    (player_centre[0] - another_centre[0]) ** 2 + (player_centre[1] - another_centre[1]) ** 2))
+                if distance <= another_distance:
+                    self.player.current_object = self
+        elif self.player.current_object == self:
+            self.player.current_object = None
+
+    def current_image_change(self):
+        if self.player.current_object == self:
+            self.image = self.image_current
+        else:
+            self.image = self.image_normal
+
+    def func(self):
+        i_key, i_hammer = -1, -1
+        for i in range(len(self.player.items)):
+            if self.player.items[i].name == self.color + '_key':
+                i_key = i
+            elif self.player.items[i].name == 'hammer':
+                i_hammer = i
+        if i_key != -1:
+            del self.player.items[i_key]
+        else:
+            del self.player.items[i_hammer]
+        self.kill()
+        images, all_sprites, group = self.door_args
+        group = group[self.floor]
+        Door(self.id, self.pos[0], self.pos[1], self.pose, self.floor, images, None, self.cam, self.player, all_sprites,
+             group)
+
+    def update(self):
+        self.is_current_check()
+        self.current_image_change()
+        pl_items_names = [i.name for i in self.player.items]
+        if self.player.current_object == self and self.player.z_pressed and any(
+                [i in pl_items_names for i in ['hammer', self.color + '_key']]):
+            self.func()
+        self.cam.apply(self)
+
+
 class Item(pygame.sprite.Sprite):
     def __init__(self, name, image, all_sprites, group):
         super().__init__(all_sprites)
@@ -416,7 +492,6 @@ class Player(pygame.sprite.Sprite):
                 screen.blit(item.image, (x_pos, y_pos))
                 y_pos += y_interval
 
-
     def update(self, keys, keys_pressed):
         self.z_pressed = False
         self.motion(keys)
@@ -472,6 +547,8 @@ def game(screen, size, FPS):
     furniture_you_can_hide_second_floor = pygame.sprite.Group()
     doors_first_floor = pygame.sprite.Group()
     doors_second_floor = pygame.sprite.Group()
+    doors_locked_first_floor = pygame.sprite.Group()
+    doors_locked_second_floor = pygame.sprite.Group
 
     items = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
@@ -536,6 +613,13 @@ def game(screen, size, FPS):
                            *self_groups)
         if classes[cl] == Furniture_that_can_be_opened:
             furniture_that_can_have_item += [furn]
+    door_args = [images['Door'], all_sprites, {1: doors_first_floor, 2: doors_second_floor}]
+    Door_locked(993, 1500, 1500, None, 1, tools.load_image('furniture\\door_locked_red.png'), door_args, 'red',
+                camera, player, all_sprites, doors_locked_first_floor, furniture_first_floor)
+    Door_locked(994, 1500, 1650, 180, 1, tools.load_image('furniture\\door_locked_blue.png'), door_args, 'blue',
+                camera, player, all_sprites, doors_locked_first_floor, furniture_first_floor)
+    Door_locked(995, 1500, 1800, 270, 1, tools.load_image('furniture\\door_locked_green.png'), door_args, 'green',
+                camera, player, all_sprites, doors_locked_first_floor, furniture_first_floor)
     # ===============предметы===========================================================================================
     hammer = Item('hammer', tools.load_image('items\\hammer.png', -1), all_sprites, items)
     red_key = Item('red_key', tools.load_image('items\\red_key.png', -1), all_sprites, items)
