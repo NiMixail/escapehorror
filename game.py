@@ -249,10 +249,13 @@ class Door(pygame.sprite.Sprite):
         self.add(groups)
         self.id = id
         self.image_closed, self.image_opened = im
+        self.dx, self.dy = 0, 0
         if pose:
             self.image_opened = pygame.transform.rotate(self.image_opened, pose)
             self.image_closed = pygame.transform.rotate(self.image_closed, pose)
+        self.pose = pose
         self.image = self.image_closed
+        self.centre = (x + self.image.get_width() // 2, y + self.image.get_height() // 2)
         self.rect = self.image.get_rect()
         self.pos = [x, y]
         self.rect.x, self.rect.y = self.pos
@@ -261,14 +264,24 @@ class Door(pygame.sprite.Sprite):
         self.player = player
 
     def open_close(self):
-        if self.player.can_use(self):
+        player_centre = (self.player.pos[0] + self.player.image.get_width() // 2,
+                         self.player.pos[1] + self.player.image.get_height() // 2)
+        if math.sqrt((player_centre[0] - self.centre[0]) ** 2 + (player_centre[1] - self.centre[1]) ** 2) <= int(
+                self.player.image.get_width() * 1.5):
             self.image = self.image_opened
+            if self.pose == 180:
+                self.dy = self.image_closed.get_height() - self.image_opened.get_height()
+            elif self.pose == 270:
+                self.dx = self.image_closed.get_width() - self.image_opened.get_width()
         else:
             self.image = self.image_closed
+            self.dx, self.dy = 0, 0
 
     def update(self):
         self.open_close()
         self.cam.apply(self)
+        self.rect.x += self.dx
+        self.rect.y += self.dy
 
 
 class Door_locked(pygame.sprite.Sprite):
