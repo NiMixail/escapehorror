@@ -40,7 +40,7 @@ def part_1(screen, size, FPS):
     au.eff('mixser').play()
     while True:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            if event.type == pygame.QUIT:
                 terminate()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 return
@@ -217,7 +217,7 @@ def part_2(screen, size, FPS):
 
     while True:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            if event.type == pygame.QUIT:
                 terminate()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 return
@@ -247,7 +247,7 @@ def part_3(screen, size, FPS):
     clock = pygame.time.Clock()
     while True:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            if event.type == pygame.QUIT:
                 terminate()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 au.eff('fortepiano_strike').stop()
@@ -267,9 +267,11 @@ def part_3(screen, size, FPS):
 
 
 def start_cutscene(screen, size, FPS):
+    pygame.mouse.set_visible(False)
     part_1(screen, size, FPS)
     part_2(screen, size, FPS)
     part_3(screen, size, FPS)
+    pygame.mouse.set_visible(True)
 
 
 if __name__ == '__main__':

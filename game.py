@@ -412,7 +412,7 @@ class Interaction_Trigger(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam):
+    def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam, screen):
         super().__init__(all_sprites)
         self.add(group)
         self.image = im
@@ -426,6 +426,7 @@ class Player(pygame.sprite.Sprite):
         self.v = 500
         self.fps = fps
         self.cam = cam
+        self.screen = screen
         self.move_triggers = {}
         self.interaction_trigger = None
         self.z_pressed = False
@@ -502,7 +503,7 @@ class Player(pygame.sprite.Sprite):
             y_pos = 10
             y_interval = max([i.image.get_height() for i in self.items]) + 5
             for item in self.items:
-                screen.blit(item.image, (x_pos, y_pos))
+                self.screen.blit(item.image, (x_pos, y_pos))
                 y_pos += y_interval
 
     def update(self, keys, keys_pressed):
@@ -542,6 +543,7 @@ def game(screen, size, FPS):
     map_size[1] = (4600, 2400)
     map_size[2] = (3200, 1800)
     clock = pygame.time.Clock()
+    pygame.mouse.set_visible(False)
     # ==============группы_спрайтов=====================================================================================
     all_sprites = pygame.sprite.Group()
 
@@ -570,7 +572,7 @@ def game(screen, size, FPS):
     # ============камера_и_главный_герой================================================================================
     camera = Camera(size)
     player = Player(50, 50, 1, tools.load_image('player.png', -1), all_sprites, player_group, size, map_size, FPS,
-                    camera)
+                    camera, screen)
     camera.floor = player.floor
     cant_move_groups = {1: [walls_first_floor, furniture_first_floor], 2: [walls_second_floor, furniture_second_floor]}
     player.move_triggers = {
@@ -655,6 +657,7 @@ def game(screen, size, FPS):
             if event.type == pygame.QUIT:
                 tools.terminate()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                pygame.mouse.set_visible(True)
                 return
             if event.type == pygame.KEYDOWN:
                 keys_pressed += [event.key]
