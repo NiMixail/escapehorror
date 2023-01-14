@@ -1,7 +1,12 @@
 import pygame
+import tkinter
 from start_cutscene import start_cutscene
 from start_screen import start_screen
-from game import  game
+from game import game
+
+root = tkinter.Tk()
+WIDTH = root.winfo_screenwidth()
+HEIGHT = root.winfo_screenheight()
 
 
 def game_test(a, b):
@@ -14,7 +19,7 @@ def continue_test(a, b):
 
 if __name__ == '__main__':
     pygame.init()
-    size = width, height = 1600, 900
+    size = WIDTH, HEIGHT
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('Scary smile')
     FPS = 120
