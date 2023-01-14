@@ -360,6 +360,24 @@ class Door_locked(pygame.sprite.Sprite):
         self.cam.apply(self)
 
 
+class Waste(pygame.sprite.Sprite):
+    def __init__(self, id, x, y, pose, fl, im, im_cur, cam, player, all_sprites, *groups):
+        super().__init__(all_sprites)
+        self.add(groups)
+        self.id = id
+        self.image = im
+        if pose:
+            self.image = pygame.transform.rotate(self.image, pose)
+        self.rect = self.image.get_rect()
+        self.pos = self.rect.x, self.rect.y = x, y
+        self.floor = fl
+        self.cam = cam
+        self.player = player
+
+    def update(self):
+        self.cam.apply(self)
+
+
 class Item(pygame.sprite.Sprite):
     def __init__(self, name, image, all_sprites, group):
         super().__init__(all_sprites)
@@ -554,16 +572,8 @@ def game(screen, size, FPS):
 
     furniture_first_floor = pygame.sprite.Group()
     furniture_second_floor = pygame.sprite.Group()
-    stairs_first_floor = pygame.sprite.Group()
-    stairs_second_floor = pygame.sprite.Group()
-    furniture_that_can_be_opened_first_floor = pygame.sprite.Group()
-    furniture_that_can_be_opened_second_floor = pygame.sprite.Group()
-    furniture_you_can_hide_first_floor = pygame.sprite.Group()
-    furniture_you_can_hide_second_floor = pygame.sprite.Group()
     doors_first_floor = pygame.sprite.Group()
     doors_second_floor = pygame.sprite.Group()
-    doors_locked_first_floor = pygame.sprite.Group()
-    doors_locked_second_floor = pygame.sprite.Group
 
     items = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
@@ -598,13 +608,6 @@ def game(screen, size, FPS):
         tools.load_image('furniture\\cupboard.png', -1), tools.load_image('furniture\\cupboard_opened.png', -1)),
               'Door': (
                   tools.load_image('furniture\\door_closed.png'), tools.load_image('furniture\\door_opened.png', -1))}
-    groups = {'Stairs': {1: stairs_first_floor, 2: stairs_second_floor},
-              'Cupboard': {1: furniture_that_can_be_opened_first_floor, 2: furniture_that_can_be_opened_second_floor},
-              'Glass_Cupboard': {1: furniture_that_can_be_opened_first_floor,
-                                 2: furniture_that_can_be_opened_second_floor},
-              'Shelf': {1: furniture_that_can_be_opened_first_floor, 2: furniture_that_can_be_opened_second_floor},
-              'Can_hide': {1: furniture_you_can_hide_first_floor, 2: furniture_you_can_hide_second_floor},
-              'Door': {1: doors_first_floor, 2: doors_second_floor}}
     map = tools.load_map()
     for floor in map['floor']:
         id, x, y, fl, width, height, image = floor
@@ -621,20 +624,21 @@ def game(screen, size, FPS):
         id, cl, x, y, pose, fl, im, im_cur = i
         im = tools.load_image('furniture\\' + im, -1) if im else images[cl]
         im_cur = tools.load_image('furniture\\' + im_cur, -1) if im_cur else None
-        self_groups = [groups[cl][fl]]
         if cl != 'Door':
-            self_groups = [furniture_first_floor if fl == 1 else furniture_second_floor] + self_groups
-        furn = classes[cl](id, x, y, pose, fl, im, im_cur, camera, player, all_sprites,
-                           *self_groups)
-        if classes[cl] == Furniture_that_can_be_opened:
+            self_groups = furniture_first_floor if fl == 1 else furniture_second_floor
+        else:
+            self_groups = doors_first_floor if fl == 1 else doors_second_floor
+        furn = classes.get(cl, Waste)(id, x, y, pose, fl, im, im_cur, camera, player, all_sprites,
+                                      self_groups)
+        if classes.get(cl, None) == Furniture_that_can_be_opened:
             furniture_that_can_have_item += [furn]
     door_args = [images['Door'], all_sprites, {1: doors_first_floor, 2: doors_second_floor}]
     Door_locked(993, 1500, 1500, None, 1, tools.load_image('furniture\\door_locked_red.png'), door_args, 'red',
-                camera, player, all_sprites, doors_locked_first_floor, furniture_first_floor)
+                camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
     Door_locked(994, 1500, 1650, 180, 1, tools.load_image('furniture\\door_locked_blue.png'), door_args, 'blue',
-                camera, player, all_sprites, doors_locked_first_floor, furniture_first_floor)
+                camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
     Door_locked(995, 1500, 1800, 270, 1, tools.load_image('furniture\\door_locked_green.png'), door_args, 'green',
-                camera, player, all_sprites, doors_locked_first_floor, furniture_first_floor)
+                camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
     # ===============предметы===========================================================================================
     hammer = Item('hammer', tools.load_image('items\\hammer.png', -1), all_sprites, items)
     red_key = Item('red_key', tools.load_image('items\\red_key.png', -1), all_sprites, items)
