@@ -58,25 +58,6 @@ class Stairs(pygame.sprite.Sprite):
         self.cam = cam
         self.player = player
 
-    def is_current_check(self):
-        if self.player.can_use(self):
-            if self.player.current_object is None:
-                self.player.current_object = self
-            elif not self.player.is_hidden:
-                another_obj = self.player.current_object
-                player_centre = (self.player.pos[0] + self.player.image.get_width() // 2,
-                                 self.player.pos[1] + self.player.image.get_height() // 2)
-                centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image.get_height() // 2)
-                another_centre = (another_obj.pos[0] + another_obj.image.get_width() // 2,
-                                  another_obj.pos[1] + another_obj.image.get_height() // 2)
-                distance = int(math.sqrt((player_centre[0] - centre[0]) ** 2 + (player_centre[1] - centre[1]) ** 2))
-                another_distance = int(math.sqrt(
-                    (player_centre[0] - another_centre[0]) ** 2 + (player_centre[1] - another_centre[1]) ** 2))
-                if distance <= another_distance:
-                    self.player.current_object = self
-        elif self.player.current_object == self:
-            self.player.current_object = None
-
     def current_image_change(self):
         if self.player.current_object == self:
             self.image = self.image_current
@@ -84,9 +65,8 @@ class Stairs(pygame.sprite.Sprite):
             self.image = self.image_normal
 
     def update(self):
-        self.is_current_check()
         self.current_image_change()
-        if self.player.z_pressed and self.player.can_use(self):
+        if self.player.can_use(self) and self.player.z_pressed:
             self.player.floor = 1 if self.player.floor == 2 else 2
         self.cam.apply(self)
 
@@ -149,25 +129,6 @@ class Furniture_that_can_be_opened(pygame.sprite.Sprite):
             self.image = self.image_closed
             self.status = 'closed'
 
-    def is_current_check(self):
-        if self.player.can_use(self):
-            if self.player.current_object is None:
-                self.player.current_object = self
-            elif not self.player.is_hidden:
-                another_obj = self.player.current_object
-                player_centre = (self.player.pos[0] + self.player.image.get_width() // 2,
-                                 self.player.pos[1] + self.player.image.get_height() // 2)
-                centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image.get_height() // 2)
-                another_centre = (another_obj.pos[0] + another_obj.image.get_width() // 2,
-                                  another_obj.pos[1] + another_obj.image.get_height() // 2)
-                distance = int(math.sqrt((player_centre[0] - centre[0]) ** 2 + (player_centre[1] - centre[1]) ** 2))
-                another_distance = int(math.sqrt(
-                    (player_centre[0] - another_centre[0]) ** 2 + (player_centre[1] - another_centre[1]) ** 2))
-                if distance <= another_distance:
-                    self.player.current_object = self
-        elif self.player.current_object == self:
-            self.player.current_object = None
-
     def current_image_change(self):
         if self.player.current_object == self:
             if self.status == 'closed':
@@ -185,9 +146,8 @@ class Furniture_that_can_be_opened(pygame.sprite.Sprite):
                 self.image = self.image_with_item
 
     def update(self):
-        self.is_current_check()
         self.current_image_change()
-        if self.player.z_pressed and self.player.current_object == self:
+        if self.player.current_object == self and self.player.z_pressed:
             self.func()
         self.cam.apply(self)
 
@@ -208,25 +168,6 @@ class Furniture_you_can_hide(pygame.sprite.Sprite):
         self.cam = cam
         self.player = player
 
-    def is_current_check(self):
-        if pygame.sprite.collide_mask(self, self.player.interaction_trigger):
-            if self.player.current_object is None:
-                self.player.current_object = self
-            else:
-                another_obj = self.player.current_object
-                player_centre = (self.player.pos[0] + self.player.image.get_width() // 2,
-                                 self.player.pos[1] + self.player.image.get_height() // 2)
-                centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image.get_height() // 2)
-                another_centre = (another_obj.pos[0] + another_obj.image.get_width() // 2,
-                                  another_obj.pos[1] + another_obj.image.get_height() // 2)
-                distance = int(math.sqrt((player_centre[0] - centre[0]) ** 2 + (player_centre[1] - centre[1]) ** 2))
-                another_distance = int(math.sqrt(
-                    (player_centre[0] - another_centre[0]) ** 2 + (player_centre[1] - another_centre[1]) ** 2))
-                if distance <= another_distance:
-                    self.player.current_object = self
-        elif self.player.current_object == self:
-            self.player.current_object = None
-
     def current_image_change(self):
         if self.player.current_object == self:
             self.image = self.image_current
@@ -236,9 +177,8 @@ class Furniture_you_can_hide(pygame.sprite.Sprite):
             self.mask = pygame.mask.from_surface(self.image)
 
     def update(self):
-        self.is_current_check()
         self.current_image_change()
-        if self.player.z_pressed and self.player.current_object == self:
+        if self.player.current_object == self and self.player.z_pressed:
             self.player.is_hidden = True if not self.player.is_hidden else False
         self.cam.apply(self)
 
@@ -308,25 +248,6 @@ class Door_locked(pygame.sprite.Sprite):
         self.color = color
         self.door_args = door_args
 
-    def is_current_check(self):
-        if self.player.can_use(self):
-            if self.player.current_object is None:
-                self.player.current_object = self
-            elif not self.player.is_hidden:
-                another_obj = self.player.current_object
-                player_centre = (self.player.pos[0] + self.player.image.get_width() // 2,
-                                 self.player.pos[1] + self.player.image.get_height() // 2)
-                centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image.get_height() // 2)
-                another_centre = (another_obj.pos[0] + another_obj.image.get_width() // 2,
-                                  another_obj.pos[1] + another_obj.image.get_height() // 2)
-                distance = int(math.sqrt((player_centre[0] - centre[0]) ** 2 + (player_centre[1] - centre[1]) ** 2))
-                another_distance = int(math.sqrt(
-                    (player_centre[0] - another_centre[0]) ** 2 + (player_centre[1] - another_centre[1]) ** 2))
-                if distance <= another_distance:
-                    self.player.current_object = self
-        elif self.player.current_object == self:
-            self.player.current_object = None
-
     def current_image_change(self):
         if self.player.current_object == self:
             self.image = self.image_current
@@ -351,7 +272,6 @@ class Door_locked(pygame.sprite.Sprite):
              group)
 
     def update(self):
-        self.is_current_check()
         self.current_image_change()
         pl_items_names = [i.name for i in self.player.items]
         if self.player.current_object == self and self.player.z_pressed and any(
@@ -430,7 +350,7 @@ class Interaction_Trigger(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam, screen):
+    def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam, screen, furn_group):
         super().__init__(all_sprites)
         self.add(group)
         self.image = im
@@ -451,6 +371,7 @@ class Player(pygame.sprite.Sprite):
         self.items = []
         self.current_object = None
         self.is_hidden = False
+        self.furn_group = furn_group
 
     def can_move_down(self):
         return self.move_triggers['down'].can_move() and not self.is_hidden
@@ -488,6 +409,19 @@ class Player(pygame.sprite.Sprite):
             return True
         return False
 
+    def current_check(self):
+        spr_list = pygame.sprite.spritecollide(self.interaction_trigger, self.furn_group[self.floor], False)
+        if len(spr_list) == 0:
+            self.current_object = None
+            return
+        centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image.get_height() // 2)
+        spr_dict = {}
+        for obj in spr_list:
+            obj_centre = (obj.pos[0] + obj.image.get_width() // 2, obj.pos[1] + obj.image.get_height() // 2)
+            dist = math.sqrt((centre[0] - obj_centre[0]) ** 2 + (centre[1] - obj_centre[1]) ** 2)
+            spr_dict[dist] = obj
+        self.current_object = spr_dict[min(spr_dict)]
+
     def motion(self, keys):
         if keys[pygame.K_DOWN] and self.can_move_down():
             self.pos[1] += self.v / self.fps
@@ -507,6 +441,8 @@ class Player(pygame.sprite.Sprite):
     def deystvie(self, keys):
         for key in keys:
             if key == pygame.K_z:
+                if self.is_hidden and self.current_object.__class__ != Furniture_you_can_hide:
+                    self.is_hidden = False
                 self.z_pressed = True
 
     def is_hidden_image_change(self):
@@ -527,11 +463,26 @@ class Player(pygame.sprite.Sprite):
     def update(self, keys, keys_pressed):
         self.z_pressed = False
         self.motion(keys)
+        self.current_check()
         self.deystvie(keys_pressed)
         self.is_hidden_image_change()
         self.cam.apply(self)
         self.update_move_triggers()
         self.update_interaction_trigger()
+
+
+class Monster(pygame.sprite.Sprite):
+    def __init__(self, im, x, y, fl, all_sprites, group, cam):
+        super().__init__(all_sprites)
+        self.add(group)
+        self.image = im
+        self.rect = self.image.get_rect()
+        self.pos = self.rect.x, self.rect.y = x, y
+        self.floor = fl
+        self.cam = cam
+
+    def update(self):
+        self.cam.apply(self)
 
 
 class Camera:
@@ -574,6 +525,8 @@ def game(screen, size, FPS):
     furniture_second_floor = pygame.sprite.Group()
     doors_first_floor = pygame.sprite.Group()
     doors_second_floor = pygame.sprite.Group()
+    waste_first_floor = pygame.sprite.Group()
+    waste_second_floor = pygame.sprite.Group()
 
     items = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
@@ -582,9 +535,10 @@ def game(screen, size, FPS):
     # ============камера_и_главный_герой================================================================================
     camera = Camera(size)
     player = Player(50, 50, 1, tools.load_image('player.png', -1), all_sprites, player_group, size, map_size, FPS,
-                    camera, screen)
+                    camera, screen, {1: furniture_first_floor, 2: furniture_second_floor})
     camera.floor = player.floor
-    cant_move_groups = {1: [walls_first_floor, furniture_first_floor], 2: [walls_second_floor, furniture_second_floor]}
+    cant_move_groups = {1: [walls_first_floor, furniture_first_floor, waste_first_floor],
+                        2: [walls_second_floor, furniture_second_floor, waste_second_floor]}
     player.move_triggers = {
         'left': Move_Trigger('vert', player, move_triggers, player.pos[0] - player.v / player.fps,
                              player.pos[1] + 4, cant_move_groups),
@@ -603,7 +557,7 @@ def game(screen, size, FPS):
     # ======заполлнение_карты===========================================================================================
     classes = {'Stairs': Stairs, 'Cupboard': Furniture_that_can_be_opened,
                'Glass_Cupboard': Furniture_that_can_be_opened, 'Shelf': Furniture_that_can_be_opened,
-               'Can_hide': Furniture_you_can_hide, 'Door': Door}
+               'Kitchen_Cupboard': Furniture_that_can_be_opened, 'Can_hide': Furniture_you_can_hide, 'Door': Door}
     images = {'Stairs': tools.load_image('furniture\\stairs.jpg'), 'Cupboard': (
         tools.load_image('furniture\\cupboard.png', -1), tools.load_image('furniture\\cupboard_opened.png', -1)),
               'Door': (
@@ -624,10 +578,12 @@ def game(screen, size, FPS):
         id, cl, x, y, pose, fl, im, im_cur = i
         im = tools.load_image('furniture\\' + im, -1) if im else images[cl]
         im_cur = tools.load_image('furniture\\' + im_cur, -1) if im_cur else None
-        if cl != 'Door':
+        if cl != 'Door' and cl in classes:
             self_groups = furniture_first_floor if fl == 1 else furniture_second_floor
-        else:
+        elif cl == 'Door':
             self_groups = doors_first_floor if fl == 1 else doors_second_floor
+        else:
+            self_groups = waste_first_floor if fl == 1 else waste_second_floor
         furn = classes.get(cl, Waste)(id, x, y, pose, fl, im, im_cur, camera, player, all_sprites,
                                       self_groups)
         if classes.get(cl, None) == Furniture_that_can_be_opened:
@@ -674,22 +630,26 @@ def game(screen, size, FPS):
             walls_first_floor.update()
             furniture_first_floor.update()
             doors_first_floor.update()
+            waste_first_floor.update()
         elif player.floor == 2:
             floor_second_floor.update()
             walls_second_floor.update()
             furniture_second_floor.update()
             doors_second_floor.update()
+            waste_second_floor.update()
 
         if player.floor == 1:
             floor_first_floor.draw(screen)
             walls_first_floor.draw(screen)
             furniture_first_floor.draw(screen)
             doors_first_floor.draw(screen)
+            waste_first_floor.draw(screen)
         elif player.floor == 2:
             floor_second_floor.draw(screen)
             walls_second_floor.draw(screen)
             furniture_second_floor.draw(screen)
             doors_second_floor.draw(screen)
+            waste_second_floor.draw(screen)
         player_group.draw(screen)
         move_triggers.draw(screen)
         interaction_triggers.draw(screen)
