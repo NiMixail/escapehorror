@@ -501,7 +501,7 @@ class Monster(pygame.sprite.Sprite):
         self.cam = cam
         self.fps = fps
         self.v_going = 300
-        self.v_running = 550
+        self.v_running = 495
         self.v = self.v_going
         self.move_triggers = {}
         self.interaction_trigger = None
@@ -510,6 +510,7 @@ class Monster(pygame.sprite.Sprite):
                                'right': ('right', 'up', 'down'), 'left': ('left', 'down', 'up')}
         self.player = player
         self.changing_floor = False
+        self.cant_move_also = {'x': False, 'y': False}
         self.stairs = stairs
         self.floor_was = None
 
@@ -526,24 +527,57 @@ class Monster(pygame.sprite.Sprite):
             self.pos[0] -= s
 
     def moving(self):
-        x_moving = 'right' if self.moving_to[0] - self.pos[0] > 0 else 'left'
-        y_moving = 'down' if self.moving_to[1] - self.pos[1] > 0 else 'up'
-        x_cant_move = False
-        y_cant_move = False
-        if self.move_triggers[x_moving].can_move():
-            self.move(x_moving)
+        moving_dict = {'x': None, 'y': None}
+        moving_x, moving_y = None, None
+        trying_also = []
+        if self.pos[0] != self.moving_to[0]:
+            moving_dict['x'] = 'right' if self.moving_to[0] - self.pos[0] > 0 else 'left'
+        if self.pos[1] != self.moving_to[1]:
+            moving_dict['y'] = 'down' if self.moving_to[1] - self.pos[1] > 0 else 'up'
+        for axis in moving_dict:
+            if moving_dict[axis]:
+                moving = moving_dict[axis]
+            else:
+                continue
+            first_order, try_also_first, try_also_second = self.moving_tactics[moving]
+            if self.move_triggers[first_order].can_move():
+                if self.cant_move_also[axis]:
+                    self.cant_move_also[axis] = False
+                if axis == 'x':
+                    moving_x = first_order
+                else:
+                    moving_y = first_order
+            elif self.move_triggers[try_also_first].can_move() and not self.cant_move_also[axis]:
+                if axis == 'x':
+                    moving_x = try_also_first
+                    trying_also += ['x']
+                else:
+                    moving_y = try_also_first
+                    trying_also += ['y']
+            elif self.move_triggers[try_also_second].can_move():
+                self.cant_move_also[axis] = True
+                if axis == 'x':
+                    trying_also += ['x']
+                    moving_x = try_also_second
+                else:
+                    trying_also += ['y']
+                    moving_y = try_also_second
+        if trying_also and not all([moving_y, moving_x]):
+            for i in trying_also:
+                self.move({'x': moving_x, 'y': moving_y}[i])
+        elif trying_also:
+            for i in trying_also:
+                self.move({'x': moving_y, 'y': moving_x}[i])
+        elif moving_x == moving_y and moving_x:
+            self.move(moving_x)
         else:
-            x_cant_move = True
-        if self.move_triggers[y_moving].can_move():
-            self.move(y_moving)
-        else:
-            y_cant_move = True
-        if x_cant_move and self.pos[1] == self.moving_to[1] or self.pos[0] == self.moving_to[
-            0] and y_cant_move or x_cant_move and y_cant_move:
-            self.moving_to = None
-            return
+            if moving_x:
+                self.move(moving_x)
+            if moving_y:
+                self.move(moving_y)
         if self.pos == self.moving_to:
             self.moving_to = None
+            self.cant_move_also = {'x': False, 'y': False}
             return
 
     def set_new_moving_to(self):
@@ -576,6 +610,8 @@ class Monster(pygame.sprite.Sprite):
                 self.moving_to = list(self.stairs[self.floor].pos)
                 self.moving_to[0] -= self.image.get_width() - 5
                 self.moving_to[1] -= self.image.get_height() - 5
+                self.cant_move_also = {'x': False, 'y': False}
+
             else:
                 self.floor = 2 if self.floor == 1 else 1
                 self.pos = list(self.stairs[self.floor].pos)
@@ -604,6 +640,7 @@ class Monster(pygame.sprite.Sprite):
         if self.floor == self.player.floor and pygame.sprite.collide_rect(self.interaction_trigger,
                                                                           self.player) and not self.player.is_hidden:
             self.v = self.v_running
+            self.changing_floor = False
             self.moving_to = self.player.pos[:]
         elif self.v == self.v_running and not self.moving_to:
             self.v = self.v_going
@@ -614,6 +651,7 @@ class Monster(pygame.sprite.Sprite):
             self.change_floor()
         elif self.player.floor == self.floor and not self.moving_to:
             self.set_new_moving_to()
+            print(self.moving_to)
 
 
 class Camera:
@@ -803,11 +841,12 @@ def game(screen, size, FPS):
         move_triggers.update()
         interaction_triggers.update()
         if any([any([pygame.sprite.collide_rect(monster.move_triggers[i], player.move_triggers[j]) for j in
-                     player.move_triggers]) for i in monster.move_triggers]):
-            win()
+                     player.move_triggers]) for i in
+                monster.move_triggers]) and player.floor == monster.floor and not player.is_hidden:
+            lose()
             return
         if player.pos[1] < 0:
-            lose()
+            win()
             return
 
         if player.floor == 1:
