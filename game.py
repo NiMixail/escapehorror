@@ -2,7 +2,9 @@ import pygame
 import tools
 import random
 import math
+from sounds import Audio
 
+au = Audio()
 
 class Floor(pygame.sprite.Sprite):
     def __init__(self, x, y, fl, im, all_sprites, group, cam):
@@ -68,6 +70,7 @@ class Stairs(pygame.sprite.Sprite):
         self.current_image_change()
         if self.player.can_use(self) and self.player.z_pressed:
             self.player.floor = 1 if self.player.floor == 2 else 2
+            au.eff('door').play()
         self.cam.apply(self)
 
 
@@ -120,14 +123,17 @@ class Furniture_that_can_be_opened(pygame.sprite.Sprite):
             if self.item:
                 self.image = self.image_with_item
                 self.status = 'opened_with_item'
+            au.eff('cupboard').play()
         elif self.item:
             self.player.items += [self.item]
             self.item = None
             self.image = self.image_opened
             self.status = 'opened'
+            au.eff('click').play()
         else:
             self.image = self.image_closed
             self.status = 'closed'
+            au.eff('cupboard').play()
 
     def current_image_change(self):
         if self.player.current_object == self:
@@ -208,13 +214,17 @@ class Door(pygame.sprite.Sprite):
                          self.player.pos[1] + self.player.image.get_height() // 2)
         if math.sqrt((player_centre[0] - self.centre[0]) ** 2 + (player_centre[1] - self.centre[1]) ** 2) <= int(
                 self.player.image.get_width() * 1.5):
-            self.image = self.image_opened
+            if self.image == self.image_closed:
+                self.image = self.image_opened
+                au.eff('door').play()
             if self.pose == 180:
                 self.dy = self.image_closed.get_height() - self.image_opened.get_height()
             elif self.pose == 270:
                 self.dx = self.image_closed.get_width() - self.image_opened.get_width()
         else:
-            self.image = self.image_closed
+            if self.image == self.image_opened:
+                self.image = self.image_closed
+                au.eff('door').play()
             self.dx, self.dy = 0, 0
 
     def update(self):
@@ -263,8 +273,10 @@ class Door_locked(pygame.sprite.Sprite):
                 i_hammer = i
         if i_key != -1:
             del self.player.items[i_key]
+            au.eff('key').play()
         else:
             del self.player.items[i_hammer]
+            au.eff('doorbreak').play()
         self.kill()
         images, all_sprites, group = self.door_args
         group = group[self.floor]

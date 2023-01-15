@@ -96,6 +96,8 @@ def start_screen(screen, size, FPS, play, play_args, continue_play, continue_pla
                          interval, lambda: True, terminate)
     buttons_list = [play_button, continue_button, exit_button]
 
+    pygame.mouse.set_visible(True)
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
