@@ -6,6 +6,7 @@ from sounds import Audio
 
 au = Audio()
 
+
 class Floor(pygame.sprite.Sprite):
     def __init__(self, x, y, fl, im, all_sprites, group, cam):
         super().__init__(all_sprites)
@@ -490,7 +491,7 @@ class Player(pygame.sprite.Sprite):
 
 
 class Monster(pygame.sprite.Sprite):
-    def __init__(self, im, x, y, fl, all_sprites, group, cam, fps, player, stairs):
+    def __init__(self, im, x, y, fl, all_sprites, group, cam, fps, player, stairs, scr_size):
         super().__init__(all_sprites)
         self.add(group)
         self.image = im
@@ -501,21 +502,24 @@ class Monster(pygame.sprite.Sprite):
         self.cam = cam
         self.fps = fps
         self.v_going = 300
-        self.v_running = 495
+        self.v_running = 450
         self.v = self.v_going
         self.move_triggers = {}
         self.interaction_trigger = None
         self.moving_to = None
+        self.axis_moving = None
         self.moving_tactics = {'up': ('up', 'right', 'left'), 'down': ('down', 'left', 'right'),
                                'right': ('right', 'up', 'down'), 'left': ('left', 'down', 'up')}
         self.player = player
         self.changing_floor = False
-        self.cant_move_also = {'x': False, 'y': False}
         self.stairs = stairs
         self.floor_was = None
+        self.cant_move_try_also_first = False
+        self.gone_to_another_axis = False
+        self.scr_size = scr_size
 
     def move(self, napr):
-        s = min(self.v / self.fps, abs(self.moving_to[0] - self.pos[0]) if napr in ['right', 'left'] else abs(
+        s = min(self.v / self.fps, abs(self.moving_to[0] - self.pos[0]) if self.axis_moving == 'x' else abs(
             self.moving_to[1] - self.pos[1]))
         if napr == 'up':
             self.pos[1] -= s
@@ -527,61 +531,44 @@ class Monster(pygame.sprite.Sprite):
             self.pos[0] -= s
 
     def moving(self):
-        moving_dict = {'x': None, 'y': None}
-        moving_x, moving_y = None, None
-        trying_also = []
-        if self.pos[0] != self.moving_to[0]:
-            moving_dict['x'] = 'right' if self.moving_to[0] - self.pos[0] > 0 else 'left'
-        if self.pos[1] != self.moving_to[1]:
-            moving_dict['y'] = 'down' if self.moving_to[1] - self.pos[1] > 0 else 'up'
-        for axis in moving_dict:
-            if moving_dict[axis]:
-                moving = moving_dict[axis]
-            else:
-                continue
-            first_order, try_also_first, try_also_second = self.moving_tactics[moving]
-            if self.move_triggers[first_order].can_move():
-                if self.cant_move_also[axis]:
-                    self.cant_move_also[axis] = False
-                if axis == 'x':
-                    moving_x = first_order
-                else:
-                    moving_y = first_order
-            elif self.move_triggers[try_also_first].can_move() and not self.cant_move_also[axis]:
-                if axis == 'x':
-                    moving_x = try_also_first
-                    trying_also += ['x']
-                else:
-                    moving_y = try_also_first
-                    trying_also += ['y']
-            elif self.move_triggers[try_also_second].can_move():
-                self.cant_move_also[axis] = True
-                if axis == 'x':
-                    trying_also += ['x']
-                    moving_x = try_also_second
-                else:
-                    trying_also += ['y']
-                    moving_y = try_also_second
-        if trying_also and not all([moving_y, moving_x]):
-            for i in trying_also:
-                self.move({'x': moving_x, 'y': moving_y}[i])
-        elif trying_also:
-            for i in trying_also:
-                self.move({'x': moving_y, 'y': moving_x}[i])
-        elif moving_x == moving_y and moving_x:
-            self.move(moving_x)
+        if self.axis_moving == 'x':
+            napr = 'right' if self.moving_to[0] - self.pos[0] > 0 else 'left'
         else:
-            if moving_x:
-                self.move(moving_x)
-            if moving_y:
-                self.move(moving_y)
-        if self.pos == self.moving_to:
+            napr = 'down' if self.moving_to[1] - self.pos[1] > 0 else 'up'
+        try_in_first_order, try_also_first, try_also_second = self.moving_tactics[napr]
+        if self.move_triggers[try_in_first_order].can_move():
+            self.move(try_in_first_order)
+            self.cant_move_try_also_first = False
+        elif self.move_triggers[try_also_first].can_move() and not self.cant_move_try_also_first:
+            self.move(try_also_first)
+        elif self.move_triggers[try_also_second].can_move():
+            self.cant_move_try_also_first = True
+            self.move(try_also_second)
+        elif not self.gone_to_another_axis:
+            self.axis_moving = 'y' if self.axis_moving == 'x' else 'x'
+            self.gone_to_another_axis = True
+        else:
+            self.gone_to_another_axis = False
+            self.cant_move_try_also_first = False
             self.moving_to = None
-            self.cant_move_also = {'x': False, 'y': False}
+            self.axis_moving = None
             return
+        if self.pos[0] == self.moving_to[0] and self.axis_moving == 'x' or self.pos[1] == self.moving_to[1] \
+                and self.axis_moving == 'y':
+            self.axis_moving = 'y' if self.axis_moving == 'x' else 'x'
+        if self.pos == self.moving_to:
+            self.gone_to_another_axis = False
+            self.cant_move_try_also_first = False
+            self.moving_to = None
+            self.axis_moving = None
 
-    def set_new_moving_to(self):
-        self.moving_to = [random.randint(0, 3600), random.randint(0, 2400)]
+    def set_new_moving_to(self, pos=None):
+        if not pos:
+            pos = [random.randint(0, self.scr_size[self.floor][0]), random.randint(0, self.scr_size[self.floor][1])]
+        self.moving_to = pos
+        self.axis_moving = 'x' if abs(self.pos[0] - self.moving_to[0]) > abs(self.pos[1] - self.moving_to[1]) else 'y'
+        self.cant_move_try_also_first = False
+        self.gone_to_another_axis = False
 
     def update_move_triggers(self):
         self.move_triggers['down'].rect.x = self.rect.x + 4
@@ -607,10 +594,10 @@ class Monster(pygame.sprite.Sprite):
             self.changing_floor = True
             self.floor_was = self.floor
             if self.floor == self.player.floor:
-                self.moving_to = list(self.stairs[self.floor].pos)
-                self.moving_to[0] -= self.image.get_width() - 5
-                self.moving_to[1] -= self.image.get_height() - 5
-                self.cant_move_also = {'x': False, 'y': False}
+                moving_to = list(self.stairs[self.floor].pos)[:]
+                moving_to[0] -= self.image.get_width() - 5
+                moving_to[1] -= self.image.get_height() - 5
+                self.set_new_moving_to(moving_to)
 
             else:
                 self.floor = 2 if self.floor == 1 else 1
@@ -625,7 +612,7 @@ class Monster(pygame.sprite.Sprite):
                 [pygame.sprite.collide_rect(self.move_triggers[i], self.stairs[self.floor]) for i in
                  self.move_triggers]):
             self.floor = 2 if self.floor == 1 else 1
-            self.pos = list(self.stairs[self.floor].pos)
+            self.pos = list(self.stairs[self.floor].pos)[:]
             self.pos[0] -= self.image.get_width() - 5
             self.pos[1] -= self.image.get_height() - 5
             self.update_move_triggers()
@@ -641,17 +628,21 @@ class Monster(pygame.sprite.Sprite):
                                                                           self.player) and not self.player.is_hidden:
             self.v = self.v_running
             self.changing_floor = False
-            self.moving_to = self.player.pos[:]
+            self.set_new_moving_to(self.player.pos[:])
         elif self.v == self.v_running and not self.moving_to:
             self.v = self.v_going
             self.set_new_moving_to()
-        if self.player.floor == self.floor and self.moving_to:
-            self.moving()
+        elif self.v == self.v_running:
+            self.v = self.v_going
         if self.changing_floor:
             self.change_floor()
+        if self.player.floor == self.floor and self.moving_to:
+            self.moving()
+        elif self.player.floor != self.floor:
+            self.pos = [random.randint(0, self.scr_size[self.floor][0]),
+                        random.randint(0, self.scr_size[self.floor][1])]
         elif self.player.floor == self.floor and not self.moving_to:
             self.set_new_moving_to()
-            print(self.moving_to)
 
 
 class Camera:
@@ -789,7 +780,7 @@ def game(screen, size, FPS):
     green_key_mainer.set_image_with_item()
     # ======монстр======================================================================================================
     monster = Monster(tools.load_image('monster.png', -1), 700, 200, 1, all_sprites, monster_group, camera, FPS,
-                      player, stairs)
+                      player, stairs, map_size)
     monster.move_triggers = {
         'left': Move_Trigger('vert', monster, move_triggers, monster.pos[0] - monster.v / monster.fps,
                              monster.pos[1] + 4, cant_move_groups),
