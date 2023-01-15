@@ -478,7 +478,7 @@ class Player(pygame.sprite.Sprite):
 
 
 class Monster(pygame.sprite.Sprite):
-    def __init__(self, im, x, y, fl, all_sprites, group, cam, fps, player_group):
+    def __init__(self, im, x, y, fl, all_sprites, group, cam, fps, player, stairs):
         super().__init__(all_sprites)
         self.add(group)
         self.image = im
@@ -488,18 +488,21 @@ class Monster(pygame.sprite.Sprite):
         self.floor = fl
         self.cam = cam
         self.fps = fps
-        self.v = 500
+        self.v_going = 300
+        self.v_running = 550
+        self.v = self.v_going
         self.move_triggers = {}
         self.interaction_trigger = None
         self.moving_to = None
-        self.axis_moving = None
         self.moving_tactics = {'up': ('up', 'right', 'left'), 'down': ('down', 'left', 'right'),
                                'right': ('right', 'up', 'down'), 'left': ('left', 'down', 'up')}
-        self.cant_move_try_also_first = False
-        self.gone_to_another_axis = False
+        self.player = player
+        self.changing_floor = False
+        self.stairs = stairs
+        self.floor_was = None
 
     def move(self, napr):
-        s = min(self.v / self.fps, abs(self.moving_to[0] - self.pos[0]) if self.axis_moving == 'x' else abs(
+        s = min(self.v / self.fps, abs(self.moving_to[0] - self.pos[0]) if napr in ['right', 'left'] else abs(
             self.moving_to[1] - self.pos[1]))
         if napr == 'up':
             self.pos[1] -= s
@@ -511,41 +514,28 @@ class Monster(pygame.sprite.Sprite):
             self.pos[0] -= s
 
     def moving(self):
-        if self.axis_moving == 'x':
-            napr = 'right' if self.moving_to[0] - self.pos[0] > 0 else 'left'
+        x_moving = 'right' if self.moving_to[0] - self.pos[0] > 0 else 'left'
+        y_moving = 'down' if self.moving_to[1] - self.pos[1] > 0 else 'up'
+        x_cant_move = False
+        y_cant_move = False
+        if self.move_triggers[x_moving].can_move():
+            self.move(x_moving)
         else:
-            napr = 'down' if self.moving_to[0] - self.pos[0] < 0 else 'up'
-        print(self.pos, self.moving_to)
-        try_in_first_order, try_also_first, try_also_second = self.moving_tactics[napr]
-        if self.move_triggers[try_in_first_order].can_move():
-            self.move(try_in_first_order)
-            self.cant_move_try_also_first = False
-        elif self.move_triggers[try_also_first].can_move() and not self.cant_move_try_also_first:
-            self.move(try_also_first)
-        elif self.move_triggers[try_also_second].can_move():
-            self.cant_move_try_also_first = True
-            self.move(try_also_second)
-        elif not self.gone_to_another_axis:
-            self.axis_moving = 'y' if self.axis_moving == 'x' else 'x'
-            self.gone_to_another_axis = True
+            x_cant_move = True
+        if self.move_triggers[y_moving].can_move():
+            self.move(y_moving)
         else:
-            self.gone_to_another_axis = False
-            self.cant_move_try_also_first = False
+            y_cant_move = True
+        if x_cant_move and self.pos[1] == self.moving_to[1] or self.pos[0] == self.moving_to[
+            0] and y_cant_move or x_cant_move and y_cant_move:
             self.moving_to = None
-            self.axis_moving = None
             return
-        if self.pos[0] == self.moving_to[0] and self.axis_moving == 'x' or self.pos[1] == self.moving_to[1] \
-                and self.axis_moving == 'y':
-            self.axis_moving = 'y' if self.axis_moving == 'x' else 'x'
         if self.pos == self.moving_to:
-            print('+')
-            self.gone_to_another_axis = False
-            self.cant_move_try_also_first = False
             self.moving_to = None
-            self.axis_moving = None
+            return
+
     def set_new_moving_to(self):
         self.moving_to = [random.randint(0, 3600), random.randint(0, 2400)]
-        self.axis_moving = 'x' if abs(self.pos[0] - self.moving_to[0]) > abs(self.pos[1] - self.moving_to[1]) else 'y'
 
     def update_move_triggers(self):
         self.move_triggers['down'].rect.x = self.rect.x + 4
@@ -566,13 +556,51 @@ class Monster(pygame.sprite.Sprite):
         self.interaction_trigger.rect.y = self.rect.y - self.image.get_height() * 2
         self.interaction_trigger.floor = self.floor
 
+    def change_floor(self):
+        if not self.changing_floor:
+            self.changing_floor = True
+            self.floor_was = self.floor
+            if self.floor == self.player.floor:
+                self.moving_to = list(self.stairs[self.floor].pos)
+                self.moving_to[0] -= self.image.get_width() - 5
+                self.moving_to[1] -= self.image.get_height() - 5
+            else:
+                self.floor = 2 if self.floor == 1 else 1
+                self.pos = list(self.stairs[self.floor].pos)
+                self.pos[0] -= self.image.get_width() - 5
+                self.pos[1] -= self.image.get_height() - 5
+                self.update_move_triggers()
+                self.update_interaction_trigger()
+                self.changing_floor = False
+                self.floor_was = None
+        elif self.floor == self.floor_was and any(
+                [pygame.sprite.collide_rect(self.move_triggers[i], self.stairs[self.floor]) for i in
+                 self.move_triggers]):
+            self.floor = 2 if self.floor == 1 else 1
+            self.pos = list(self.stairs[self.floor].pos)
+            self.pos[0] -= self.image.get_width() - 5
+            self.pos[1] -= self.image.get_height() - 5
+            self.update_move_triggers()
+            self.update_interaction_trigger()
+            self.changing_floor = False
+            self.floor_was = None
+
     def update(self):
         self.cam.apply(self)
         self.update_move_triggers()
         self.update_interaction_trigger()
-        if self.moving_to:
+        if self.floor == self.player.floor and pygame.sprite.collide_rect(self.interaction_trigger,
+                                                                          self.player) and not self.player.is_hidden:
+            self.v = self.v_running
+            self.moving_to = self.player.pos[:]
+        elif self.v == self.v_running and not self.moving_to:
+            self.v = self.v_going
+            self.set_new_moving_to()
+        if self.player.floor == self.floor and self.moving_to:
             self.moving()
-        else:
+        if self.changing_floor:
+            self.change_floor()
+        elif self.player.floor == self.floor and not self.moving_to:
             self.set_new_moving_to()
 
 
@@ -597,12 +625,19 @@ class Camera:
             self.dy = -(target.pos[1] + target.image.get_height() // 2 - self.scr_height // 2)
 
 
+def win():
+    pass
+
+
+def lose():
+    pass
+
+
 def game(screen, size, FPS):
     WIDTH, HEIGHT = size
     map_size = {}
     map_size[1] = (4600, 2400)
     map_size[2] = (3200, 1800)
-    clock = pygame.time.Clock()
     pygame.mouse.set_visible(False)
     # ==============группы_спрайтов=====================================================================================
     all_sprites = pygame.sprite.Group()
@@ -624,7 +659,7 @@ def game(screen, size, FPS):
     monster_group = pygame.sprite.Group()
     move_triggers = pygame.sprite.Group()
     interaction_triggers = pygame.sprite.Group()
-    # ============камера,_главный_герой_и_монстр========================================================================
+    # ============камера_и_главный_герой================================================================================
     camera = Camera(size)
     player = Player(50, 50, 1, tools.load_image('player.png', -1), all_sprites, player_group, size, map_size, FPS,
                     camera, screen, {1: furniture_first_floor, 2: furniture_second_floor})
@@ -644,21 +679,6 @@ def game(screen, size, FPS):
     player.interaction_trigger = Interaction_Trigger(player, interaction_triggers,
                                                      player.pos[0] - player.image.get_width() // 4,
                                                      player.pos[1] - player.image.get_height() // 4)
-    monster = Monster(tools.load_image('monster.png', -1), 700, 200, 1, all_sprites, monster_group, camera, FPS,
-                      player_group)
-    monster.move_triggers = {
-        'left': Move_Trigger('vert', monster, move_triggers, monster.pos[0] - monster.v / monster.fps,
-                             monster.pos[1] + 4, cant_move_groups),
-        'up': Move_Trigger('hor', monster, move_triggers, monster.pos[0] + 4,
-                           monster.pos[1] - monster.v / monster.fps, cant_move_groups),
-        'right': Move_Trigger('vert', monster, move_triggers,
-                              monster.pos[0] + monster.image.get_width() + monster.v / monster.fps,
-                              monster.pos[1] + 4, cant_move_groups),
-        'down': Move_Trigger('hor', monster, move_triggers, monster.pos[0] + 4,
-                             monster.pos[1] + monster.image.get_height() + monster.v / monster.fps, cant_move_groups)}
-    monster.interaction_trigger = Interaction_Trigger(monster, interaction_triggers,
-                                                      monster.pos[0] - monster.image.get_width() * 2,
-                                                      monster.pos[1] - monster.image.get_height() * 2)
     # ======заполлнение_карты===========================================================================================
     classes = {'Stairs': Stairs, 'Cupboard': Furniture_that_can_be_opened,
                'Glass_Cupboard': Furniture_that_can_be_opened, 'Shelf': Furniture_that_can_be_opened,
@@ -679,6 +699,7 @@ def game(screen, size, FPS):
         id, x, y, fl, type, width = wall
         Wall(x, y, fl, type, width, all_sprites, walls_first_floor if fl == 1 else walls_second_floor, camera)
     furniture_that_can_have_item = []
+    stairs = {}
     for i in map['furniture']:
         id, cl, x, y, pose, fl, im, im_cur = i
         im = tools.load_image('furniture\\' + im, -1) if im else images[cl]
@@ -693,6 +714,8 @@ def game(screen, size, FPS):
                                       self_groups)
         if classes.get(cl, None) == Furniture_that_can_be_opened:
             furniture_that_can_have_item += [furn]
+        if cl == 'Stairs':
+            stairs[fl] = furn
     door_args = [images['Door'], all_sprites, {1: doors_first_floor, 2: doors_second_floor}]
     Door_locked(993, 1500, 1500, None, 1, tools.load_image('furniture\\door_locked_red.png'), door_args, 'red',
                 camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
@@ -714,9 +737,27 @@ def game(screen, size, FPS):
     blue_key_mainer.set_image_with_item()
     green_key_mainer.item = green_key
     green_key_mainer.set_image_with_item()
+    # ======монстр======================================================================================================
+    monster = Monster(tools.load_image('monster.png', -1), 700, 200, 1, all_sprites, monster_group, camera, FPS,
+                      player, stairs)
+    monster.move_triggers = {
+        'left': Move_Trigger('vert', monster, move_triggers, monster.pos[0] - monster.v / monster.fps,
+                             monster.pos[1] + 4, cant_move_groups),
+        'up': Move_Trigger('hor', monster, move_triggers, monster.pos[0] + 4,
+                           monster.pos[1] - monster.v / monster.fps, cant_move_groups),
+        'right': Move_Trigger('vert', monster, move_triggers,
+                              monster.pos[0] + monster.image.get_width() + monster.v / monster.fps,
+                              monster.pos[1] + 4, cant_move_groups),
+        'down': Move_Trigger('hor', monster, move_triggers, monster.pos[0] + 4,
+                             monster.pos[1] + monster.image.get_height() + monster.v / monster.fps, cant_move_groups)}
+    monster.interaction_trigger = Interaction_Trigger(monster, interaction_triggers,
+                                                      monster.pos[0] - monster.image.get_width() * 2,
+                                                      monster.pos[1] - monster.image.get_height() * 2)
+    # =======время======================================================================================================
+    clock = pygame.time.Clock()
+    MONSTER_CHANGE_FLOOR = pygame.USEREVENT + 1
+    pygame.time.set_timer(MONSTER_CHANGE_FLOOR, 25000)
     # ==========главный_цикл============================================================================================
-    monster.moving_to = [2000, 2000]
-    monster.axis_moving = 'x'
 
     while True:
         keys_pressed = []
@@ -728,6 +769,8 @@ def game(screen, size, FPS):
                 return
             if event.type == pygame.KEYDOWN:
                 keys_pressed += [event.key]
+            if event.type == MONSTER_CHANGE_FLOOR:
+                monster.change_floor()
         keys = pygame.key.get_pressed()
 
         screen.fill((255, 255, 255))
@@ -747,6 +790,13 @@ def game(screen, size, FPS):
         monster_group.update()
         move_triggers.update()
         interaction_triggers.update()
+        if any([any([pygame.sprite.collide_rect(monster.move_triggers[i], player.move_triggers[j]) for j in
+                     player.move_triggers]) for i in monster.move_triggers]):
+            win()
+            return
+        if player.pos[1] < 0:
+            lose()
+            return
 
         if player.floor == 1:
             floor_first_floor.draw(screen)
