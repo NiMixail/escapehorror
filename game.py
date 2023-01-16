@@ -30,6 +30,7 @@ class Wall(pygame.sprite.Sprite):
         self.add(group)
         size = (Wall.height, width) if type == 'vert' else (width, Wall.height)
         self.image = pygame.Surface(size)
+        self.mask = pygame.mask.from_surface(self.image)
         self.image.fill((0, 0, 0))
         self.rect = self.image.get_rect()
         self.pos = (x, y)
@@ -49,6 +50,7 @@ class Stairs(pygame.sprite.Sprite):
         self.id = id
         self.image_normal = im
         self.image = self.image_normal
+        self.mask = pygame.mask.from_surface(self.image_normal)
         self.cur_color = pygame.Color('yellow')
         self.cur_rect = (0, 0, self.image.get_width(), self.image.get_height())
         im_cur = self.image.copy()
@@ -85,6 +87,7 @@ class Furniture_that_can_be_opened(pygame.sprite.Sprite):
             self.image_closed = pygame.transform.rotate(self.image_closed, pose)
             self.image_opened = pygame.transform.rotate(self.image_opened, pose)
         self.image = self.image_closed
+        self.mask = pygame.mask.from_surface(self.image_opened)
         self.cur_color = pygame.Color('yellow')
         self.cur_rect = (0, 0, self.image.get_width(), self.image.get_height())
         image_current_opened = self.image_opened.copy()
@@ -166,8 +169,11 @@ class Furniture_you_can_hide(pygame.sprite.Sprite):
         self.id = id
         self.image_normal = im
         self.image_current = im_cur
+        if pose:
+            self.image_normal = pygame.transform.rotate(self.image_normal, pose)
+            self.image_current = pygame.transform.rotate(self.image_current, pose)
         self.image = self.image_normal
-        self.mask = pygame.mask.from_surface(self.image)
+        self.mask = pygame.mask.from_surface(self.image_normal)
         self.rect = self.image.get_rect()
         self.pos = x, y
         self.rect.x, self.rect.y = self.pos
@@ -251,6 +257,7 @@ class Door_locked(pygame.sprite.Sprite):
         pygame.draw.rect(im_cur, cur_color, cur_rect, 1)
         self.image_current = im_cur
         self.image = self.image_normal
+        self.mask = pygame.mask.from_surface(self.image_normal)
         self.rect = self.image.get_rect()
         self.pos = self.rect.x, self.rect.y = x, y
         self.floor = fl
@@ -303,6 +310,7 @@ class Waste(pygame.sprite.Sprite):
         self.image = im
         if pose:
             self.image = pygame.transform.rotate(self.image, pose)
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.pos = self.rect.x, self.rect.y = x, y
         self.floor = fl
@@ -341,7 +349,10 @@ class Move_Trigger(pygame.sprite.Sprite):
         self.image.set_alpha(255)
 
     def can_move(self):
-        if any([pygame.sprite.spritecollideany(self, i) for i in self.cant_move_groups[self.floor]]):
+        spr_list = []
+        for gr in self.cant_move_groups[self.floor]:
+            spr_list.extend(pygame.sprite.spritecollide(self, gr, False))
+        if any([pygame.sprite.collide_mask(self, i) for i in spr_list]):
             return False
         return True
 
@@ -374,9 +385,10 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam, screen, furn_group):
         super().__init__(all_sprites)
         self.add(group)
-        self.image = im
+        self.image_normal = im
+        self.image = self.image_normal
         self.rect = self.image.get_rect()
-        self.mask = pygame.mask.from_surface(self.image)
+        self.mask = pygame.mask.from_surface(self.image_normal)
         self.pos = [x, y]
         self.rect.x, self.rect.y = self.pos
         self.floor = fl
@@ -408,12 +420,12 @@ class Player(pygame.sprite.Sprite):
 
     def update_move_triggers(self):
         self.move_triggers['down'].rect.x = self.rect.x + 4
-        self.move_triggers['down'].rect.y = self.rect.y + self.image.get_height() + self.v / self.fps
+        self.move_triggers['down'].rect.y = self.rect.y + self.image_normal.get_height() + self.v / self.fps
         self.move_triggers['down'].floor = self.floor
         self.move_triggers['up'].rect.x = self.rect.x + 4
         self.move_triggers['up'].rect.y = self.rect.y - self.v / self.fps + 1
         self.move_triggers['up'].floor = self.floor
-        self.move_triggers['right'].rect.x = self.rect.x + self.image.get_width() + self.v / self.fps
+        self.move_triggers['right'].rect.x = self.rect.x + self.image_normal.get_width() + self.v / self.fps
         self.move_triggers['right'].rect.y = self.rect.y + 4
         self.move_triggers['right'].floor = self.floor
         self.move_triggers['left'].rect.x = self.rect.x - self.v / self.fps + 1
@@ -421,8 +433,8 @@ class Player(pygame.sprite.Sprite):
         self.move_triggers['left'].floor = self.floor
 
     def update_interaction_trigger(self):
-        self.interaction_trigger.rect.x = self.rect.x - self.image.get_width() // 4
-        self.interaction_trigger.rect.y = self.rect.y - self.image.get_height() // 4
+        self.interaction_trigger.rect.x = self.rect.x - self.image_normal.get_width() // 4
+        self.interaction_trigger.rect.y = self.rect.y - self.image_normal.get_height() // 4
         self.interaction_trigger.floor = self.floor
 
     def can_use(self, obj):
@@ -435,7 +447,7 @@ class Player(pygame.sprite.Sprite):
         if len(spr_list) == 0:
             self.current_object = None
             return
-        centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image.get_height() // 2)
+        centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image_normal.get_height() // 2)
         spr_dict = {}
         for obj in spr_list:
             obj_centre = (obj.pos[0] + obj.image.get_width() // 2, obj.pos[1] + obj.image.get_height() // 2)
@@ -779,7 +791,10 @@ def game(screen, size, FPS, contin=False):
     images = {'Stairs': tools.load_image('furniture\\stairs.jpg'), 'Cupboard': (
         tools.load_image('furniture\\cupboard.png', -1), tools.load_image('furniture\\cupboard_opened.png', -1)),
               'Door': (
-                  tools.load_image('furniture\\door_closed.png'), tools.load_image('furniture\\door_opened.png', -1))}
+                  tools.load_image('furniture\\door_closed.png'), tools.load_image('furniture\\door_opened.png', -1)),
+              'Shelf': (
+                  tools.load_image('furniture\\shelf_closed.png', -1),
+                  tools.load_image('furniture\\shelf_opened.png', -1))}
     map = tools.load_map()
     for floor in map['floor']:
         id, x, y, fl, width, height, image = floor
@@ -793,6 +808,7 @@ def game(screen, size, FPS, contin=False):
         Wall(x, y, fl, type, width, all_sprites, walls_first_floor if fl == 1 else walls_second_floor, camera)
     furniture_that_can_have_item = {}
     stairs = {}
+    hammer_mainer = None
     for i in map['furniture']:
         id, cl, x, y, pose, fl, im, im_cur = i
         im = tools.load_image('furniture\\' + im, -1) if im else images[cl]
@@ -805,10 +821,12 @@ def game(screen, size, FPS, contin=False):
             self_groups = waste_first_floor if fl == 1 else waste_second_floor
         furn = classes.get(cl, Waste)(id, x, y, pose, fl, im, im_cur, camera, player, all_sprites,
                                       self_groups)
-        if classes.get(cl, None) == Furniture_that_can_be_opened:
+        if classes.get(cl, None) == Furniture_that_can_be_opened and id != 9999:
             furniture_that_can_have_item[id] = furn
         if cl == 'Stairs':
             stairs[fl] = furn
+        if id == 9999:
+            hammer_mainer = furn
     door_args = [images['Door'], all_sprites, {1: doors_first_floor, 2: doors_second_floor}]
     d_red, d_blue, d_green = None, None, None
     if 'red' not in opened_doors:
@@ -842,11 +860,14 @@ def game(screen, size, FPS, contin=False):
     mainers = [furniture_that_can_have_item[i] for i in mainers_id]
     mainers_copy = mainers[::-1]
     if not items_in_furn:
-        for i in [hammer, red_key, green_key, blue_key]:
+        for i in [red_key, green_key, blue_key]:
             if i not in player.items:
                 mainer = mainers_copy.pop()
                 mainer.item = i
                 mainer.set_image_with_item()
+        hammer_mainer.item = hammer
+        hammer_mainer.set_image_with_item()
+        mainers += [hammer_mainer]
     else:
         mainers = []
         for i in items_in_furn:
