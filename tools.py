@@ -48,14 +48,13 @@ def load_continue():
     with open('data/continue.txt', 'r', encoding='UTF-8') as f:
         data_list = [[j.split(', ')[:-1] for j in i.split('\n')] for i in f.read().split('\n\n')]
     data = {}
-    data['player'], data['monster'] = data_list[0]
+    data['player'], data['monster'], data['camera'] = data_list[0]
     data['items'] = {}
     for i in data_list[1]:
         if i[0]:
             data['items'][i[0]] = i[1]
     data['collected_items'] = [i[0] for i in data_list[2] if i[0]]
-    data['flashlight_charge'] = data_list[3][0][0]
-    data['batteries_number'] = data_list[3][0][1]
+    data['doors_opened'] = [i[0] for i in data_list[3] if i and i[0]]
     return data
 
 
@@ -63,6 +62,7 @@ def set_default_continue():
     with open('data/continue.txt', 'w', encoding='UTF-8') as f:
         f.write(""", , , положение игрока (x; y; этаж) (последний элемент каждой строки - пояснение)
 , , , положение монстра (x; y; этаж)
+, , , смещение камеры
 
 , , -
 , ,  |
@@ -76,38 +76,45 @@ def set_default_continue():
 ,  |
 , -
 
-, , заряд фонарика(%) + количество батареек""")
+, -
+, - открытые двери
+, -
+, - """)
 
 
 def set_continue(data):
     player = ', '.join([str(i) for i in data['player']])
     monster = ', '.join([str(i) for i in data['monster']])
-    fl_lig_ch = data['flashlight_charge']
-    batt_num = data['batteries_number']
+    camera = ', '.join([str(i) for i in data['camera']])
+    doors_opened = data['doors_opened']
+    dor_op = '\n'.join([i + ', -' for i in doors_opened]) + ' открытые двери' if doors_opened else ', - открытые двери'
     items = '\n'.join([i + ', ' + str(data['items'][i]) + ', ' for i in data['items']])
     if not items:
-        items = ', , } пложение вещей (класс предмета; id предмета мебели)'
+        items = ', , } пложение вещей (название предмета; id предмета мебели)'
     else:
         items = items.split('\n')
         items = '\n'.join(
-            items[i] + '} пложение вещей (класс предмета; id предмета мебели)' if i == len(items) // 2 else items[i] for
+            items[i] + '} пложение вещей (название предмета; id предмета мебели)' if i == len(items) // 2 else items[i]
+            for
             i in range(len(items)))
     col_items = data['collected_items']
     if len(col_items) == 0:
-        col_items = ', } вещи в инвентаре (класс предмета)'
+        col_items = ', } вещи в инвентаре (название предмета)'
     else:
         col_items = '\n'.join(
-            col_items[i] + ', } вещи в инвентаре (класс предмета)' if i == len(col_items) // 2 else col_items[i] + ', '
+            col_items[i] + ', } вещи в инвентаре (название предмета)' if i == len(col_items) // 2 else col_items[
+                                                                                                           i] + ', '
             for i in range(len(col_items)))
     with open('data/continue.txt', 'w', encoding='UTF-8') as f:
         f.write(f"""{player}, положение игрока (x; y; этаж) (последний элемент каждой строки - пояснение)
 {monster}, положение монстра (x; y; этаж)
+{camera}, смещение камеры
 
 {items}
 
 {col_items}
 
-{fl_lig_ch}, {batt_num}, заряд фонарика(%) + количество батареек""")
+{dor_op}""")
 
 
 def load_map():
@@ -122,4 +129,4 @@ def load_map():
 
 
 if __name__ == '__main__':
-    print(load_map())
+    set_default_continue()
