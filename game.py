@@ -90,7 +90,7 @@ class Furniture_that_can_be_opened(pygame.sprite.Sprite):
             self.image_closed = pygame.transform.rotate(self.image_closed, pose)
             self.image_opened = pygame.transform.rotate(self.image_opened, pose)
         self.image = self.image_closed
-        self.mask = pygame.mask.from_surface(self.image_opened)
+        self.mask = pygame.mask.from_surface(self.image_closed)
         self.cur_color = pygame.Color('yellow')
         self.cur_rect = (0, 0, self.image.get_width(), self.image.get_height())
         image_current_opened = self.image_opened.copy()
@@ -725,7 +725,7 @@ def game(screen, size, FPS, contin=False):
     cam_dx, cam_dy, cam_floor = -1661, 0, 2
     items_in_furn = None
     collected_items = []
-    opened_doors = []
+    opened_doors = ['green', 'blue']
     if contin:
         cont = tools.load_continue()
         player_x, player_y, player_floor = [float(i) for i in cont['player']]
