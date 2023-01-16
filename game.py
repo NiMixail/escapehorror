@@ -711,7 +711,7 @@ def insert_data(player, monster, camera, mainers, locked_doors):
     tools.set_continue(data)
 
 
-def win(scree, size, FPS):
+def win(screen, size, FPS):
     end_screen(screen, size, FPS, 'win')
 
 
@@ -847,7 +847,7 @@ def game(screen, size, FPS, contin=False):
                               'green',
                               camera, player, all_sprites, furniture_second_floor)
     else:
-        Door(995, 1500, 1800, 180, 2, images['Door'], None, camera, player, all_sprites, doors_second_floor)
+        Door(995, 920, 260, 270, 2, images['Door'], None, camera, player, all_sprites, doors_second_floor)
     locked_doors = [i for i in [d_red, d_blue, d_green] if i]
     # ===============предметы===========================================================================================
     hammer = Item('hammer', tools.load_image('items\\hammer.png', -1), all_sprites, items)
@@ -872,7 +872,7 @@ def game(screen, size, FPS, contin=False):
     else:
         mainers = []
         for i in items_in_furn:
-            mainer = furniture_that_can_have_item[int(i)]
+            mainer = furniture_that_can_have_item[int(i)] if i != '9999' else hammer_mainer
             mainer.item = dict[items_in_furn[i]]
             mainer.set_image_with_item()
             mainers += [mainer]
