@@ -258,6 +258,7 @@ class Door_locked(pygame.sprite.Sprite):
         self.player = player
         self.color = color
         self.door_args = door_args
+        self.killed = False
 
     def current_image_change(self):
         if self.player.current_object == self:
@@ -278,6 +279,7 @@ class Door_locked(pygame.sprite.Sprite):
         else:
             del self.player.items[i_hammer]
             au.eff('doorbreak').play()
+        self.killed = True
         self.kill()
         images, all_sprites, group = self.door_args
         group = group[self.floor]
@@ -494,7 +496,13 @@ class Monster(pygame.sprite.Sprite):
     def __init__(self, im, x, y, fl, all_sprites, group, cam, fps, player, stairs, scr_size):
         super().__init__(all_sprites)
         self.add(group)
-        self.image = im
+        self.image_normal = im
+        self.image = self.image_normal
+        self.image_left = self.image_normal
+        self.image_right = pygame.transform.flip(self.image_left, True, False)
+        self.image_up = pygame.transform.rotate(self.image_left, 270)
+        self.image_down = pygame.transform.flip(self.image_up, False, True)
+        self.images = {'left': self.image_left, 'right': self.image_right, 'up': self.image_up, 'down': self.image_down}
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x, y
         self.pos = [x, y]
@@ -521,6 +529,7 @@ class Monster(pygame.sprite.Sprite):
     def move(self, napr):
         s = min(self.v / self.fps, abs(self.moving_to[0] - self.pos[0]) if self.axis_moving == 'x' else abs(
             self.moving_to[1] - self.pos[1]))
+        self.image = self.images[napr]
         if napr == 'up':
             self.pos[1] -= s
         elif napr == 'down':
@@ -572,12 +581,12 @@ class Monster(pygame.sprite.Sprite):
 
     def update_move_triggers(self):
         self.move_triggers['down'].rect.x = self.rect.x + 4
-        self.move_triggers['down'].rect.y = self.rect.y + self.image.get_height() + self.v / self.fps
+        self.move_triggers['down'].rect.y = self.rect.y + self.image_normal.get_height() + self.v / self.fps
         self.move_triggers['down'].floor = self.floor
         self.move_triggers['up'].rect.x = self.rect.x + 4
         self.move_triggers['up'].rect.y = self.rect.y - self.v / self.fps + 1
         self.move_triggers['up'].floor = self.floor
-        self.move_triggers['right'].rect.x = self.rect.x + self.image.get_width() + self.v / self.fps
+        self.move_triggers['right'].rect.x = self.rect.x + self.image_normal.get_width() + self.v / self.fps
         self.move_triggers['right'].rect.y = self.rect.y + 4
         self.move_triggers['right'].floor = self.floor
         self.move_triggers['left'].rect.x = self.rect.x - self.v / self.fps + 1
@@ -585,8 +594,8 @@ class Monster(pygame.sprite.Sprite):
         self.move_triggers['left'].floor = self.floor
 
     def update_interaction_trigger(self):
-        self.interaction_trigger.rect.x = self.rect.x - self.image.get_width() * 2
-        self.interaction_trigger.rect.y = self.rect.y - self.image.get_height() * 2
+        self.interaction_trigger.rect.x = self.rect.x - self.image_normal.get_width() * 2
+        self.interaction_trigger.rect.y = self.rect.y - self.image_normal.get_height() * 2
         self.interaction_trigger.floor = self.floor
 
     def change_floor(self):
@@ -595,15 +604,15 @@ class Monster(pygame.sprite.Sprite):
             self.floor_was = self.floor
             if self.floor == self.player.floor:
                 moving_to = list(self.stairs[self.floor].pos)[:]
-                moving_to[0] -= self.image.get_width() - 5
-                moving_to[1] -= self.image.get_height() - 5
+                moving_to[0] -= self.image_normal.get_width() - 5
+                moving_to[1] -= self.image_normal.get_height() - 5
                 self.set_new_moving_to(moving_to)
 
             else:
                 self.floor = 2 if self.floor == 1 else 1
                 self.pos = list(self.stairs[self.floor].pos)
-                self.pos[0] -= self.image.get_width() - 5
-                self.pos[1] -= self.image.get_height() - 5
+                self.pos[0] -= self.image_normal.get_width() - 5
+                self.pos[1] -= self.image_normal.get_height() - 5
                 self.update_move_triggers()
                 self.update_interaction_trigger()
                 self.changing_floor = False
@@ -613,8 +622,8 @@ class Monster(pygame.sprite.Sprite):
                  self.move_triggers]):
             self.floor = 2 if self.floor == 1 else 1
             self.pos = list(self.stairs[self.floor].pos)[:]
-            self.pos[0] -= self.image.get_width() - 5
-            self.pos[1] -= self.image.get_height() - 5
+            self.pos[0] -= self.image_normal.get_width() - 5
+            self.pos[1] -= self.image_normal.get_height() - 5
             self.update_move_triggers()
             self.update_interaction_trigger()
             self.changing_floor = False
@@ -654,7 +663,7 @@ class Camera:
 
     def apply(self, obj):
         if obj.floor == self.floor:
-            obj.rect.x, obj.rect.y = obj.pos  # у каждого объекта есть атрибут pos, где находятся его координаты на карте
+            obj.rect.x, obj.rect.y = obj.pos
             obj.rect.x += self.dx
             obj.rect.y += self.dy
 
@@ -666,6 +675,25 @@ class Camera:
             self.dy = -(target.pos[1] + target.image.get_height() // 2 - self.scr_height // 2)
 
 
+def insert_data(player, monster, camera, mainers, locked_doors):
+    data = {}
+    data['player'] = [str(player.pos[0]), str(player.pos[1]), str(int(player.floor))]
+    data['monster'] = [str(monster.pos[0]), str(monster.pos[1]), str(int(monster.floor))]
+    data['camera'] = [str(camera.dx), str(camera.dy), str(camera.floor)]
+    data['collected_items'] = [i.name for i in player.items]
+    items = {}
+    for i in mainers:
+        if i.item:
+            items[str(i.id)] = i.item.name
+    data['items'] = items
+    doors_opened = [i.color for i in locked_doors if i.killed]
+    for i in ['blue', 'green', 'red']:
+        if i not in [j.color for j in locked_doors]:
+            doors_opened += [i]
+    data['doors_opened'] = doors_opened
+    tools.set_continue(data)
+
+
 def win():
     pass
 
@@ -674,7 +702,23 @@ def lose():
     pass
 
 
-def game(screen, size, FPS):
+def game(screen, size, FPS, contin=False):
+    player_x, player_y, player_floor = 2750, 70, 2
+    monster_x, monster_y, monster_floor = 1900, 1100, 1
+    cam_dx, cam_dy, cam_floor = -1661, 0, 2
+    items_in_furn = None
+    collected_items = []
+    opened_doors = []
+    if contin:
+        cont = tools.load_continue()
+        player_x, player_y, player_floor = [float(i) for i in cont['player']]
+        monster_x, monster_y, monster_floor = [float(i) for i in cont['monster']]
+        cam_dx, cam_dy, cam_floor = [float(i) for i in cont['camera']]
+        items_in_furn = cont['items']
+        collected_items = cont['collected_items']
+        opened_doors = cont['doors_opened']
+    else:
+        tools.set_default_continue()
     WIDTH, HEIGHT = size
     map_size = {}
     map_size[1] = (4600, 2400)
@@ -702,7 +746,11 @@ def game(screen, size, FPS):
     interaction_triggers = pygame.sprite.Group()
     # ============камера_и_главный_герой================================================================================
     camera = Camera(size)
-    player = Player(50, 50, 1, tools.load_image('player.png', -1), all_sprites, player_group, size, map_size, FPS,
+    camera.dx = cam_dx
+    camera.dy = cam_dy
+    camera.floor == cam_floor
+    player = Player(player_x, player_y, player_floor, tools.load_image('player.png', -1), all_sprites, player_group,
+                    size, map_size, FPS,
                     camera, screen, {1: furniture_first_floor, 2: furniture_second_floor})
     camera.floor = player.floor
     cant_move_groups = {1: [walls_first_floor, furniture_first_floor, waste_first_floor],
@@ -739,7 +787,7 @@ def game(screen, size, FPS):
     for wall in map['walls']:
         id, x, y, fl, type, width = wall
         Wall(x, y, fl, type, width, all_sprites, walls_first_floor if fl == 1 else walls_second_floor, camera)
-    furniture_that_can_have_item = []
+    furniture_that_can_have_item = {}
     stairs = {}
     for i in map['furniture']:
         id, cl, x, y, pose, fl, im, im_cur = i
@@ -754,32 +802,57 @@ def game(screen, size, FPS):
         furn = classes.get(cl, Waste)(id, x, y, pose, fl, im, im_cur, camera, player, all_sprites,
                                       self_groups)
         if classes.get(cl, None) == Furniture_that_can_be_opened:
-            furniture_that_can_have_item += [furn]
+            furniture_that_can_have_item[id] = furn
         if cl == 'Stairs':
             stairs[fl] = furn
     door_args = [images['Door'], all_sprites, {1: doors_first_floor, 2: doors_second_floor}]
-    Door_locked(993, 1500, 1500, None, 1, tools.load_image('furniture\\door_locked_red.png'), door_args, 'red',
-                camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
-    Door_locked(994, 1500, 1650, 180, 1, tools.load_image('furniture\\door_locked_blue.png'), door_args, 'blue',
-                camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
-    Door_locked(995, 1500, 1800, 270, 1, tools.load_image('furniture\\door_locked_green.png'), door_args, 'green',
-                camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
+    d_red, d_blue, d_green = None, None, None
+    if 'red' not in opened_doors:
+        d_red = Door_locked(993, 1500, 1500, None, 1, tools.load_image('furniture\\door_locked_red.png'), door_args,
+                            'red',
+                            camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
+    else:
+        Door(993, 1500, 1500, None, 1, images['Door'], None, camera, player, all_sprites, doors_first_floor)
+    if 'blue' not in opened_doors:
+        d_blue = Door_locked(994, 1500, 1650, 180, 1, tools.load_image('furniture\\door_locked_blue.png'), door_args,
+                             'blue',
+                             camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
+    else:
+        Door(994, 1500, 1650, 180, 1, images['Door'], None, camera, player, all_sprites, doors_first_floor)
+    if 'green' not in opened_doors:
+        d_green = Door_locked(995, 1500, 1800, 270, 1, tools.load_image('furniture\\door_locked_green.png'), door_args,
+                              'green',
+                              camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
+    else:
+        Door(995, 1500, 1800, 270, 1, images['Door'], None, camera, player, all_sprites, doors_first_floor)
+    locked_doors = [i for i in [d_red, d_blue, d_green] if i]
     # ===============предметы===========================================================================================
     hammer = Item('hammer', tools.load_image('items\\hammer.png', -1), all_sprites, items)
     red_key = Item('red_key', tools.load_image('items\\red_key.png', -1), all_sprites, items)
     blue_key = Item('blue_key', tools.load_image('items\\blue_key.png', -1), all_sprites, items)
     green_key = Item('green_key', tools.load_image('items\\green_key.png', -1), all_sprites, items)
-    hammer_mainer, red_key_mainer, blue_key_mainer, green_key_mainer = random.sample(furniture_that_can_have_item, 4)
-    hammer_mainer.item = hammer
-    hammer_mainer.set_image_with_item()
-    red_key_mainer.item = red_key
-    red_key_mainer.set_image_with_item()
-    blue_key_mainer.item = blue_key
-    blue_key_mainer.set_image_with_item()
-    green_key_mainer.item = green_key
-    green_key_mainer.set_image_with_item()
+    dict = {'hammer': hammer, 'red_key': red_key, 'green_key': green_key, 'blue_key': blue_key}
+    for i in collected_items:
+        player.items += [dict[i]]
+    mainers_id = random.sample([i for i in furniture_that_can_have_item], 4 - len(collected_items))
+    mainers = [furniture_that_can_have_item[i] for i in mainers_id]
+    mainers_copy = mainers[::-1]
+    if not items_in_furn:
+        for i in [hammer, red_key, green_key, blue_key]:
+            if i not in player.items:
+                mainer = mainers_copy.pop()
+                mainer.item = i
+                mainer.set_image_with_item()
+    else:
+        mainers = []
+        for i in items_in_furn:
+            mainer = furniture_that_can_have_item[int(i)]
+            mainer.item = dict[items_in_furn[i]]
+            mainer.set_image_with_item()
+            mainers += [mainer]
     # ======монстр======================================================================================================
-    monster = Monster(tools.load_image('monster.png', -1), 700, 200, 1, all_sprites, monster_group, camera, FPS,
+    monster = Monster(tools.load_image('monster.png', -1), monster_x, monster_y, monster_floor, all_sprites,
+                      monster_group, camera, FPS,
                       player, stairs, map_size)
     monster.move_triggers = {
         'left': Move_Trigger('vert', monster, move_triggers, monster.pos[0] - monster.v / monster.fps,
@@ -806,6 +879,7 @@ def game(screen, size, FPS):
             if event.type == pygame.QUIT:
                 tools.terminate()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                insert_data(player, monster, camera, mainers, locked_doors)
                 pygame.mouse.set_visible(True)
                 return
             if event.type == pygame.KEYDOWN:
@@ -835,9 +909,11 @@ def game(screen, size, FPS):
                      player.move_triggers]) for i in
                 monster.move_triggers]) and player.floor == monster.floor and not player.is_hidden:
             lose()
+            tools.set_default_continue()
             return
         if player.pos[1] < 0:
             win()
+            tools.set_default_continue()
             return
 
         if player.floor == 1:
