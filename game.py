@@ -73,6 +73,9 @@ class Stairs(pygame.sprite.Sprite):
         self.current_image_change()
         if self.player.can_use(self) and self.player.z_pressed:
             self.player.floor = 1 if self.player.floor == 2 else 2
+            self.player.pos = [2115, 1195] if self.player.floor == 1 else [1295, 1095]
+            self.cam.update(self.player, 'x')
+            self.cam.update(self.player, 'y')
             au.eff('door').play()
         self.cam.apply(self)
 
@@ -341,6 +344,7 @@ class Move_Trigger(pygame.sprite.Sprite):
         self.pos = [x, y]
         self.floor = mainer.floor
         self.cant_move_groups = cant_move
+        self.hide()
 
     def hide(self):
         self.image.set_alpha(0)
@@ -373,6 +377,7 @@ class Interaction_Trigger(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = x, y
         self.pos = [x, y]
         self.floor = mainer.floor
+        self.hide()
 
     def hide(self):
         self.image.set_alpha(0)
