@@ -196,6 +196,7 @@ class Furniture_you_can_hide(pygame.sprite.Sprite):
         self.current_image_change()
         if self.player.current_object == self and self.player.z_pressed:
             self.player.is_hidden = True if not self.player.is_hidden else False
+            au.eff('hide').play()
         self.cam.apply(self)
 
 
@@ -898,6 +899,10 @@ def game(screen, size, FPS, contin=False):
     MONSTER_CHANGE_FLOOR = pygame.USEREVENT + 1
     pygame.time.set_timer(MONSTER_CHANGE_FLOOR, 25000)
     # ==========главный_цикл============================================================================================
+    dark_level = 140
+
+    au.set_bg_music('tension.mp3')
+    au.bg_music().play()
 
     while True:
         keys_pressed = []
@@ -935,9 +940,11 @@ def game(screen, size, FPS, contin=False):
                      player.move_triggers]) for i in
                 monster.move_triggers]) and player.floor == monster.floor and not player.is_hidden:
             lose(screen, size, FPS)
+            au.bg_music().stop()
             tools.set_default_continue()
             return
         if player.pos[1] < 0:
+            au.bg_music().stop()
             win(screen, size, FPS)
             tools.set_default_continue()
             return
@@ -960,8 +967,14 @@ def game(screen, size, FPS, contin=False):
         move_triggers.draw(screen)
         interaction_triggers.draw(screen)
         player.draw_inventar()
-
         clock.tick(FPS)
+
+        dark = pygame.Surface(screen.get_size())
+        dark.fill((0, 0, 0))
+        dark_level = max(min(dark_level + random.randint(-2, 2), 200), 80)
+        dark.set_alpha(dark_level)
+        screen.blit(dark, (0, 0))
+
         pygame.display.flip()
         clock.tick(FPS)
 

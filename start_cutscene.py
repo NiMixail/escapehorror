@@ -235,7 +235,7 @@ def part_2(screen, size, FPS):
             pygame.time.delay(2000)
             return
         pygame.display.flip()
-        clock.tick(FPS * 2)
+        clock.tick(FPS * 1.5)
 
 
 def part_3(screen, size, FPS):
@@ -264,7 +264,7 @@ def part_3(screen, size, FPS):
         screen.blit(font_sur,
                     (WIDTH // 2 - font_sur.get_width() // 2,
                      HEIGHT // 2 - font_sur.get_height() // 2))
-        if alpha >= 500:
+        if alpha >= 800:
             alpha_moving *= -1
         elif alpha <= 0 and alpha_moving < -1:
             return
