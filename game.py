@@ -29,6 +29,7 @@ class Wall(pygame.sprite.Sprite):
         self.add(group)
         size = (Wall.height, width) if type == 'vert' else (width, Wall.height)
         self.image = pygame.Surface(size)
+        self.mask = pygame.mask.from_surface(self.image)
         self.image.fill((0, 0, 0))
         self.rect = self.image.get_rect()
         self.pos = (x, y)
@@ -48,6 +49,7 @@ class Stairs(pygame.sprite.Sprite):
         self.id = id
         self.image_normal = im
         self.image = self.image_normal
+        self.mask = pygame.mask.from_surface(self.image_normal)
         self.cur_color = pygame.Color('yellow')
         self.cur_rect = (0, 0, self.image.get_width(), self.image.get_height())
         im_cur = self.image.copy()
@@ -84,6 +86,7 @@ class Furniture_that_can_be_opened(pygame.sprite.Sprite):
             self.image_closed = pygame.transform.rotate(self.image_closed, pose)
             self.image_opened = pygame.transform.rotate(self.image_opened, pose)
         self.image = self.image_closed
+        self.mask = pygame.mask.from_surface(self.image_opened)
         self.cur_color = pygame.Color('yellow')
         self.cur_rect = (0, 0, self.image.get_width(), self.image.get_height())
         image_current_opened = self.image_opened.copy()
@@ -169,7 +172,7 @@ class Furniture_you_can_hide(pygame.sprite.Sprite):
             self.image_normal = pygame.transform.rotate(self.image_normal, pose)
             self.image_current = pygame.transform.rotate(self.image_current, pose)
         self.image = self.image_normal
-        self.mask = pygame.mask.from_surface(self.image)
+        self.mask = pygame.mask.from_surface(self.image_normal)
         self.rect = self.image.get_rect()
         self.pos = x, y
         self.rect.x, self.rect.y = self.pos
@@ -253,6 +256,7 @@ class Door_locked(pygame.sprite.Sprite):
         pygame.draw.rect(im_cur, cur_color, cur_rect, 1)
         self.image_current = im_cur
         self.image = self.image_normal
+        self.mask = pygame.mask.from_surface(self.image_normal)
         self.rect = self.image.get_rect()
         self.pos = self.rect.x, self.rect.y = x, y
         self.floor = fl
@@ -305,6 +309,7 @@ class Waste(pygame.sprite.Sprite):
         self.image = im
         if pose:
             self.image = pygame.transform.rotate(self.image, pose)
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.pos = self.rect.x, self.rect.y = x, y
         self.floor = fl
@@ -343,7 +348,10 @@ class Move_Trigger(pygame.sprite.Sprite):
         self.image.set_alpha(255)
 
     def can_move(self):
-        if any([pygame.sprite.spritecollideany(self, i) for i in self.cant_move_groups[self.floor]]):
+        spr_list = []
+        for gr in self.cant_move_groups[self.floor]:
+            spr_list.extend(pygame.sprite.spritecollide(self, gr, False))
+        if any([pygame.sprite.collide_mask(self, i) for i in spr_list]):
             return False
         return True
 
