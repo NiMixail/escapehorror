@@ -399,7 +399,7 @@ class Player(pygame.sprite.Sprite):
         self.floor = fl
         self.scr_width, self.scr_height = scr_size
         self.map_size = map_size
-        self.v = 500
+        self.v = 1000
         self.fps = fps
         self.cam = cam
         self.screen = screen
@@ -843,11 +843,11 @@ def game(screen, size, FPS, contin=False):
     else:
         Door(994, 1970, 1500, 90, 2, images['Door'], None, camera, player, all_sprites, doors_second_floor)
     if 'green' not in opened_doors:
-        d_green = Door_locked(995, 920, 260, 270, 2, tools.load_image('furniture\\door_locked_green.png'), door_args,
+        d_green = Door_locked(995, 930, 260, 270, 2, tools.load_image('furniture\\door_locked_green.png'), door_args,
                               'green',
                               camera, player, all_sprites, furniture_second_floor)
     else:
-        Door(995, 920, 260, 270, 2, images['Door'], None, camera, player, all_sprites, doors_second_floor)
+        Door(995, 930, 260, 270, 2, images['Door'], None, camera, player, all_sprites, doors_second_floor)
     locked_doors = [i for i in [d_red, d_blue, d_green] if i]
     # ===============предметы===========================================================================================
     hammer = Item('hammer', tools.load_image('items\\hammer.png', -1), all_sprites, items)
