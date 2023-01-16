@@ -831,23 +831,23 @@ def game(screen, size, FPS, contin=False):
     door_args = [images['Door'], all_sprites, {1: doors_first_floor, 2: doors_second_floor}]
     d_red, d_blue, d_green = None, None, None
     if 'red' not in opened_doors:
-        d_red = Door_locked(993, 1500, 1500, None, 1, tools.load_image('furniture\\door_locked_red.png'), door_args,
+        d_red = Door_locked(993, 2175, 0, 180, 1, tools.load_image('furniture\\door_locked_red.png'), door_args,
                             'red',
-                            camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
+                            camera, player, all_sprites, furniture_first_floor)
     else:
-        Door(993, 1500, 1500, None, 1, images['Door'], None, camera, player, all_sprites, doors_first_floor)
+        Door(993, 2175, 0, None, 1, images['Door'], None, camera, player, all_sprites, doors_first_floor)
     if 'blue' not in opened_doors:
-        d_blue = Door_locked(994, 1500, 1650, 180, 1, tools.load_image('furniture\\door_locked_blue.png'), door_args,
+        d_blue = Door_locked(994, 1970, 1500, 90, 2, tools.load_image('furniture\\door_locked_blue.png'), door_args,
                              'blue',
-                             camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
+                             camera, player, all_sprites, furniture_second_floor)
     else:
-        Door(994, 1500, 1650, 180, 1, images['Door'], None, camera, player, all_sprites, doors_first_floor)
+        Door(994, 1970, 1500, 90, 2, images['Door'], None, camera, player, all_sprites, doors_second_floor)
     if 'green' not in opened_doors:
-        d_green = Door_locked(995, 1500, 1800, 270, 1, tools.load_image('furniture\\door_locked_green.png'), door_args,
+        d_green = Door_locked(995, 920, 260, 270, 2, tools.load_image('furniture\\door_locked_green.png'), door_args,
                               'green',
-                              camera, player, all_sprites, furniture_first_floor, furniture_first_floor)
+                              camera, player, all_sprites, furniture_second_floor)
     else:
-        Door(995, 1500, 1800, 270, 1, images['Door'], None, camera, player, all_sprites, doors_first_floor)
+        Door(995, 1500, 1800, 180, 2, images['Door'], None, camera, player, all_sprites, doors_second_floor)
     locked_doors = [i for i in [d_red, d_blue, d_green] if i]
     # ===============предметы===========================================================================================
     hammer = Item('hammer', tools.load_image('items\\hammer.png', -1), all_sprites, items)
