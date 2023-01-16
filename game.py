@@ -165,6 +165,9 @@ class Furniture_you_can_hide(pygame.sprite.Sprite):
         self.id = id
         self.image_normal = im
         self.image_current = im_cur
+        if pose:
+            self.image_normal = pygame.transform.rotate(self.image_normal, pose)
+            self.image_current = pygame.transform.rotate(self.image_current, pose)
         self.image = self.image_normal
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
