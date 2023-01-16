@@ -775,7 +775,9 @@ def game(screen, size, FPS, contin=False):
     images = {'Stairs': tools.load_image('furniture\\stairs.jpg'), 'Cupboard': (
         tools.load_image('furniture\\cupboard.png', -1), tools.load_image('furniture\\cupboard_opened.png', -1)),
               'Door': (
-                  tools.load_image('furniture\\door_closed.png'), tools.load_image('furniture\\door_opened.png', -1))}
+                  tools.load_image('furniture\\door_closed.png'), tools.load_image('furniture\\door_opened.png', -1)),
+              'Shelf': (
+              tools.load_image('furniture\\shelf_closed.png', -1), tools.load_image('furniture\\shelf_opened.png', -1))}
     map = tools.load_map()
     for floor in map['floor']:
         id, x, y, fl, width, height, image = floor
