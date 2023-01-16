@@ -225,10 +225,17 @@ def part_2(screen, size, FPS):
         penciles.update()
         penciles.draw(screen)
         if pencil.cur_letter == len(points):
-            clock.tick(1)
+            print(1)
+            font = pygame.font.Font(None, 68)
+            font_sur = font.render("and Stable Diffusion image generating AI", True, (50, 50, 50))
+            screen.blit(font_sur,
+                        (WIDTH // 2 - font_sur.get_width() // 2,
+                         HEIGHT // 12 * 11 - font_sur.get_height() // 2))
+            pygame.display.flip()
+            pygame.time.delay(2000)
             return
         pygame.display.flip()
-        clock.tick(FPS)
+        clock.tick(FPS * 2)
 
 
 def part_3(screen, size, FPS):

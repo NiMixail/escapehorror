@@ -2,6 +2,7 @@ import pygame
 import tools
 import random
 import math
+from end_screen import end_screen
 
 au = tools.Audio()
 
@@ -694,11 +695,15 @@ def insert_data(player, monster, camera, mainers, locked_doors):
 
 
 def win():
-    pass
+    size = 1600, 900
+    screen = pygame.display.set_mode(size)
+    end_screen(screen, size, 60, 'win')
 
 
 def lose():
-    pass
+    size = 1600, 900
+    screen = pygame.display.set_mode(size)
+    end_screen(screen, size, 60, 'lose')
 
 
 def game(screen, size, FPS, contin=False):
