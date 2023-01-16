@@ -1,7 +1,6 @@
 import pygame
 
 from tools import load_image, terminate, Audio
-from start_screen import start_screen
 
 au = Audio()
 
@@ -46,9 +45,9 @@ def end_screen(screen, size, FPS, type):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                terminate()
+                return
             if event.type == pygame.KEYDOWN:
-                start_screen(screen, size, FPS, play, ['1', '2'], continue_play, ['1', '2'])
+                return
             buttons.update(event)
         screen.fill((0, 0, 0))
         buttons.update()
@@ -64,4 +63,4 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption('end screen')
     FPS = 60
-    end_screen(screen, size, FPS, 'win')
+    end_screen(screen, size, FPS, 'lose')

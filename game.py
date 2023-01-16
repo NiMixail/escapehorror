@@ -711,16 +711,12 @@ def insert_data(player, monster, camera, mainers, locked_doors):
     tools.set_continue(data)
 
 
-def win():
-    size = 1600, 900
-    screen = pygame.display.set_mode(size)
-    end_screen(screen, size, 60, 'win')
+def win(scree, size, FPS):
+    end_screen(screen, size, FPS, 'win')
 
 
-def lose():
-    size = 1600, 900
-    screen = pygame.display.set_mode(size)
-    end_screen(screen, size, 60, 'lose')
+def lose(screen, size, FPS):
+    end_screen(screen, size, FPS, 'lose')
 
 
 def game(screen, size, FPS, contin=False):
@@ -938,11 +934,11 @@ def game(screen, size, FPS, contin=False):
         if any([any([pygame.sprite.collide_rect(monster.move_triggers[i], player.move_triggers[j]) for j in
                      player.move_triggers]) for i in
                 monster.move_triggers]) and player.floor == monster.floor and not player.is_hidden:
-            lose()
+            lose(screen, size, FPS)
             tools.set_default_continue()
             return
         if player.pos[1] < 0:
-            win()
+            win(screen, size, FPS)
             tools.set_default_continue()
             return
 
