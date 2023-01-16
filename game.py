@@ -2,9 +2,8 @@ import pygame
 import tools
 import random
 import math
-from sounds import Audio
 
-au = Audio()
+au = tools.Audio()
 
 
 class Floor(pygame.sprite.Sprite):

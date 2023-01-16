@@ -4,6 +4,25 @@ import pygame
 import sqlite3
 
 
+class Audio:
+    def __init__(self):
+        pygame.mixer.init()
+        self.effects = {}
+        for fn in os.listdir(path='data/sounds'):
+            if not fn.startswith('ost_'):
+                self.effects[fn[:-4]] = pygame.mixer.Sound('data/sounds/' + fn)
+        print(self.effects)
+
+    def eff(self, name):
+        return self.effects[name]
+
+    def set_bg_music(self, name_with_extension):
+        pygame.mixer.music.load('data/sounds/ost_' + name_with_extension)
+
+    def bg_music(self):
+        return pygame.mixer.music
+
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     if not os.path.isfile(fullname):

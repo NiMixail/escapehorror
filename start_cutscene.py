@@ -1,6 +1,5 @@
 import pygame
-from tools import load_image, terminate
-from sounds import Audio
+from tools import load_image, terminate, Audio
 
 au = Audio()
 
