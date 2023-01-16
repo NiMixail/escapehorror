@@ -33,7 +33,6 @@ def end_screen(screen, size, FPS, type):
     clock = pygame.time.Clock()
     all_sprites = pygame.sprite.Group()
     backgroundes = pygame.sprite.Group()
-    buttons = pygame.sprite.Group()
 
     background_im = load_image('start_screen/bg_lose.png' if type == 'lose' else 'start_screen/bg_win.png')
     Background(background_im, all_sprites, backgroundes)
@@ -41,6 +40,10 @@ def end_screen(screen, size, FPS, type):
     pygame.mouse.set_visible(True)
 
     au.eff('screamer' if type == 'lose' else 'win').play()
+    screen.fill((0, 0, 0))
+    backgroundes.draw(screen)
+    pygame.display.flip()
+    pygame.time.delay(2000)
 
     while True:
         for event in pygame.event.get():
@@ -48,12 +51,6 @@ def end_screen(screen, size, FPS, type):
                 return
             if event.type == pygame.KEYDOWN:
                 return
-            buttons.update(event)
-        screen.fill((0, 0, 0))
-        buttons.update()
-        backgroundes.draw(screen)
-        buttons.draw(screen)
-        pygame.display.flip()
         clock.tick(FPS)
 
 

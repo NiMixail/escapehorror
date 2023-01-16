@@ -878,7 +878,7 @@ def game(screen, size, FPS, contin=False):
             mainer.set_image_with_item()
             mainers += [mainer]
     # ======монстр======================================================================================================
-    monster = Monster(tools.load_image('monster.png', -1), monster_x, monster_y, monster_floor, all_sprites,
+    monster = Monster(tools.load_image('monster.png'), monster_x, monster_y, monster_floor, all_sprites,
                       monster_group, camera, FPS,
                       player, stairs, map_size)
     monster.move_triggers = {
@@ -969,7 +969,7 @@ def game(screen, size, FPS, contin=False):
         player.draw_inventar()
         clock.tick(FPS)
 
-        dark = pygame.Surface(screen.get_size())
+        dark = pygame.Surface((WIDTH, HEIGHT))
         dark.fill((0, 0, 0))
         dark_level = max(min(dark_level + random.randint(-2, 2), 200), 80)
         dark.set_alpha(dark_level)
