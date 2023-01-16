@@ -373,9 +373,10 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam, screen, furn_group):
         super().__init__(all_sprites)
         self.add(group)
-        self.image = im
+        self.image_normal = im
+        self.image = self.image_normal
         self.rect = self.image.get_rect()
-        self.mask = pygame.mask.from_surface(self.image)
+        self.mask = pygame.mask.from_surface(self.image_normal)
         self.pos = [x, y]
         self.rect.x, self.rect.y = self.pos
         self.floor = fl
@@ -407,12 +408,12 @@ class Player(pygame.sprite.Sprite):
 
     def update_move_triggers(self):
         self.move_triggers['down'].rect.x = self.rect.x + 4
-        self.move_triggers['down'].rect.y = self.rect.y + self.image.get_height() + self.v / self.fps
+        self.move_triggers['down'].rect.y = self.rect.y + self.image_normal.get_height() + self.v / self.fps
         self.move_triggers['down'].floor = self.floor
         self.move_triggers['up'].rect.x = self.rect.x + 4
         self.move_triggers['up'].rect.y = self.rect.y - self.v / self.fps + 1
         self.move_triggers['up'].floor = self.floor
-        self.move_triggers['right'].rect.x = self.rect.x + self.image.get_width() + self.v / self.fps
+        self.move_triggers['right'].rect.x = self.rect.x + self.image_normal.get_width() + self.v / self.fps
         self.move_triggers['right'].rect.y = self.rect.y + 4
         self.move_triggers['right'].floor = self.floor
         self.move_triggers['left'].rect.x = self.rect.x - self.v / self.fps + 1
@@ -420,8 +421,8 @@ class Player(pygame.sprite.Sprite):
         self.move_triggers['left'].floor = self.floor
 
     def update_interaction_trigger(self):
-        self.interaction_trigger.rect.x = self.rect.x - self.image.get_width() // 4
-        self.interaction_trigger.rect.y = self.rect.y - self.image.get_height() // 4
+        self.interaction_trigger.rect.x = self.rect.x - self.image_normal.get_width() // 4
+        self.interaction_trigger.rect.y = self.rect.y - self.image_normal.get_height() // 4
         self.interaction_trigger.floor = self.floor
 
     def can_use(self, obj):
@@ -434,7 +435,7 @@ class Player(pygame.sprite.Sprite):
         if len(spr_list) == 0:
             self.current_object = None
             return
-        centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image.get_height() // 2)
+        centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image_normal.get_height() // 2)
         spr_dict = {}
         for obj in spr_list:
             obj_centre = (obj.pos[0] + obj.image.get_width() // 2, obj.pos[1] + obj.image.get_height() // 2)
