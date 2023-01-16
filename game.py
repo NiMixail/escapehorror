@@ -777,7 +777,8 @@ def game(screen, size, FPS, contin=False):
               'Door': (
                   tools.load_image('furniture\\door_closed.png'), tools.load_image('furniture\\door_opened.png', -1)),
               'Shelf': (
-              tools.load_image('furniture\\shelf_closed.png', -1), tools.load_image('furniture\\shelf_opened.png', -1))}
+                  tools.load_image('furniture\\shelf_closed.png', -1),
+                  tools.load_image('furniture\\shelf_opened.png', -1))}
     map = tools.load_map()
     for floor in map['floor']:
         id, x, y, fl, width, height, image = floor
@@ -791,6 +792,7 @@ def game(screen, size, FPS, contin=False):
         Wall(x, y, fl, type, width, all_sprites, walls_first_floor if fl == 1 else walls_second_floor, camera)
     furniture_that_can_have_item = {}
     stairs = {}
+    hammer_mainer = None
     for i in map['furniture']:
         id, cl, x, y, pose, fl, im, im_cur = i
         im = tools.load_image('furniture\\' + im, -1) if im else images[cl]
@@ -803,10 +805,12 @@ def game(screen, size, FPS, contin=False):
             self_groups = waste_first_floor if fl == 1 else waste_second_floor
         furn = classes.get(cl, Waste)(id, x, y, pose, fl, im, im_cur, camera, player, all_sprites,
                                       self_groups)
-        if classes.get(cl, None) == Furniture_that_can_be_opened:
+        if classes.get(cl, None) == Furniture_that_can_be_opened and id != 9999:
             furniture_that_can_have_item[id] = furn
         if cl == 'Stairs':
             stairs[fl] = furn
+        if id == 9999:
+            hammer_mainer = furn
     door_args = [images['Door'], all_sprites, {1: doors_first_floor, 2: doors_second_floor}]
     d_red, d_blue, d_green = None, None, None
     if 'red' not in opened_doors:
@@ -840,11 +844,14 @@ def game(screen, size, FPS, contin=False):
     mainers = [furniture_that_can_have_item[i] for i in mainers_id]
     mainers_copy = mainers[::-1]
     if not items_in_furn:
-        for i in [hammer, red_key, green_key, blue_key]:
+        for i in [red_key, green_key, blue_key]:
             if i not in player.items:
                 mainer = mainers_copy.pop()
                 mainer.item = i
                 mainer.set_image_with_item()
+        hammer_mainer.item = hammer
+        hammer_mainer.set_image_with_item()
+        mainers += [hammer_mainer]
     else:
         mainers = []
         for i in items_in_furn:
