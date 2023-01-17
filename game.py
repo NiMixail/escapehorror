@@ -754,7 +754,7 @@ def game(screen, size, FPS, contin=False):
     cam_dx, cam_dy, cam_floor = -1661, 0, 2
     items_in_furn = None
     collected_items = []
-    opened_doors = ['green', 'blue']
+    opened_doors = []
     seconds = 0
     if contin:
         cont = tools.load_continue()
@@ -1012,7 +1012,6 @@ def game(screen, size, FPS, contin=False):
         move_triggers.draw(screen)
         interaction_triggers.draw(screen)
         player.draw_inventar()
-        clock.tick(FPS)
 
         dark = pygame.Surface((WIDTH, HEIGHT))
         dark.fill((0, 0, 0))
@@ -1028,5 +1027,7 @@ if __name__ == '__main__':
     pygame.init()
     size = width, height = 1542, 864
     FPS = 120
+
+
     screen = pygame.display.set_mode(size)
     game(screen, size, FPS)
