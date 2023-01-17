@@ -693,7 +693,7 @@ class Camera:
             self.dy = -(target.pos[1] + target.image.get_height() // 2 - self.scr_height // 2)
 
 
-def insert_data(player, monster, camera, mainers, locked_doors, secs):
+def insert_data(player, monster, camera, mainers, locked_doors, secs, blue_mainer_id):
     data = {}
     data['player'] = [str(player.pos[0]), str(player.pos[1]), str(int(player.floor))]
     data['monster'] = [str(monster.pos[0]), str(monster.pos[1]), str(int(monster.floor))]
@@ -703,6 +703,10 @@ def insert_data(player, monster, camera, mainers, locked_doors, secs):
     for i in mainers:
         if i.item:
             items[str(i.id)] = i.item.name
+    if 'blue_key' not in mainers and 'blue_key' not in [i.name for i in player.items] and 'blue' not in [i.color for i
+                                                                                                         in
+                                                                                                         locked_doors]:
+        items[str(blue_mainer_id)] = 'blue_key'
     data['items'] = items
     doors_opened = [i.color for i in locked_doors if i.killed]
     for i in ['blue', 'green', 'red']:
@@ -813,6 +817,7 @@ def game(screen, size, FPS, contin=False):
         Wall(x, y, fl, type, width, all_sprites, walls_first_floor if fl == 1 else walls_second_floor, camera)
     furniture_that_can_have_item = {}
     stairs = {}
+    blue_key_can_spawn = {}
     hammer_mainer = None
     for i in map['furniture']:
         id, cl, x, y, pose, fl, im, im_cur = i
@@ -828,6 +833,8 @@ def game(screen, size, FPS, contin=False):
                                       self_groups)
         if classes.get(cl, None) == Furniture_that_can_be_opened and id != 9999:
             furniture_that_can_have_item[id] = furn
+            if fl == 1:
+                blue_key_can_spawn[id] = furn
         if cl == 'Stairs':
             stairs[fl] = furn
         if id == 9999:
@@ -861,15 +868,20 @@ def game(screen, size, FPS, contin=False):
     dict = {'hammer': hammer, 'red_key': red_key, 'green_key': green_key, 'blue_key': blue_key}
     for i in collected_items:
         player.items += [dict[i]]
-    mainers_id = random.sample([i for i in furniture_that_can_have_item], 4 - len(collected_items))
+    mainers_id = random.sample([i for i in furniture_that_can_have_item], 3 - len(collected_items))
+    blue_mainer_id = random.choice([i for i in blue_key_can_spawn])
     mainers = [furniture_that_can_have_item[i] for i in mainers_id]
+    blue_key_mainer = furniture_that_can_have_item[blue_mainer_id]
     mainers_copy = mainers[::-1]
     if not items_in_furn:
-        for i in [red_key, green_key, blue_key]:
+        for i in [red_key, green_key]:
             if i not in player.items:
                 mainer = mainers_copy.pop()
                 mainer.item = i
                 mainer.set_image_with_item()
+        if blue_key not in player.items:
+            blue_key_mainer.item = blue_key
+            blue_key_mainer.set_image_with_item()
         hammer_mainer.item = hammer
         hammer_mainer.set_image_with_item()
         mainers += [hammer_mainer]
@@ -917,7 +929,7 @@ def game(screen, size, FPS, contin=False):
             if event.type == pygame.QUIT:
                 tools.terminate()
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                insert_data(player, monster, camera, mainers, locked_doors, seconds)
+                insert_data(player, monster, camera, mainers, locked_doors, seconds, blue_mainer_id)
                 pygame.mouse.set_visible(True)
                 return
             elif event.type == pygame.KEYDOWN:
