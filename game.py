@@ -801,8 +801,8 @@ def game(screen, size, FPS, contin=False):
     for floor in map['floor']:
         id, x, y, fl, width, height, image = floor
         image = tools.load_image('furniture\\' + image)
-        for x_pos in range(x, width, image.get_width()):
-            for y_pos in range(y, height, image.get_height()):
+        for x_pos in range(x, x + width, image.get_width()):
+            for y_pos in range(y, y + height, image.get_height()):
                 Floor(x_pos, y_pos, fl, image, all_sprites,
                       floor_first_floor if fl == 1 else floor_second_floor, camera)
     for wall in map['walls']:
