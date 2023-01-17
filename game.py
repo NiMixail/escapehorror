@@ -400,7 +400,7 @@ class Player(pygame.sprite.Sprite):
         self.floor = fl
         self.scr_width, self.scr_height = scr_size
         self.map_size = map_size
-        self.v = 1000
+        self.v = 400
         self.fps = fps
         self.cam = cam
         self.screen = screen
@@ -511,16 +511,26 @@ class Player(pygame.sprite.Sprite):
 
 
 class Monster(pygame.sprite.Sprite):
-    def __init__(self, im, x, y, fl, all_sprites, group, cam, fps, player, stairs, scr_size, points):
+    def __init__(self, im, im_2, x, y, fl, all_sprites, group, cam, fps, player, stairs, scr_size, points):
         super().__init__(all_sprites)
         self.add(group)
         self.image_normal = im
+        self.image_2 = im_2
         self.image = self.image_normal
         self.image_left = self.image_normal
         self.image_right = pygame.transform.flip(self.image_left, True, False)
         self.image_up = pygame.transform.rotate(self.image_left, 270)
         self.image_down = pygame.transform.flip(self.image_up, False, True)
+        self.image_2_left = self.image_2
+        self.image_2_right = pygame.transform.flip(self.image_2_left, True, False)
+        self.image_2_up = pygame.transform.rotate(self.image_2_left, 270)
+        self.image_2_down = pygame.transform.rotate(self.image_2_left, 90)
         self.images = {'left': self.image_left, 'right': self.image_right, 'up': self.image_up, 'down': self.image_down}
+        self.images_2 = {'left': self.image_2_left, 'right': self.image_2_right, 'up': self.image_2_up,
+                         'down': self.image_2_down}
+        self.napr = 'left'
+        self.animate_score = 0
+        self.animated = False
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = x, y
         self.pos = [x, y]
@@ -528,7 +538,7 @@ class Monster(pygame.sprite.Sprite):
         self.cam = cam
         self.fps = fps
         self.v_going = 300
-        self.v_running = 450
+        self.v_running = 405
         self.v = self.v_going
         self.move_triggers = {}
         self.interaction_trigger = None
@@ -545,10 +555,22 @@ class Monster(pygame.sprite.Sprite):
         self.scr_size = scr_size
         self.points_can_spawn = points
 
+
+    def animate(self):
+        if self.animate_score == 7:
+            self.animate_score = 0
+            self.animated = True if not self.animated else False
+        else:
+            self.animate_score += 1
+        if self.animated:
+            self.image = self.images_2[self.napr]
+        else:
+            self.image = self.images[self.napr]
+
     def move(self, napr):
         s = min(self.v / self.fps, abs(self.moving_to[0] - self.pos[0]) if self.axis_moving == 'x' else abs(
             self.moving_to[1] - self.pos[1]))
-        self.image = self.images[napr]
+        self.napr = napr
         if napr == 'up':
             self.pos[1] -= s
         elif napr == 'down':
@@ -652,6 +674,7 @@ class Monster(pygame.sprite.Sprite):
         self.cam.apply(self)
         self.update_move_triggers()
         self.update_interaction_trigger()
+        self.animate()
         if self.floor == self.player.floor and pygame.sprite.collide_rect(self.interaction_trigger,
                                                                           self.player) and not self.player.is_hidden:
             self.v = self.v_running
@@ -895,7 +918,8 @@ def game(screen, size, FPS, contin=False):
     # ======монстр======================================================================================================
     points_can_spawn = {1: [(1300, 300), (1900, 500), (460, 1111), (1500, 1850), (3300, 1900), (4200, 160)],
                         2: [(1100, 100), (2300, 300), (2400, 800), (1050, 1600), (750, 730)]}
-    monster = Monster(tools.load_image('monster.png', -1), monster_x, monster_y, monster_floor, all_sprites,
+    monster = Monster(tools.load_image('monster.png', -1), tools.load_image('monster_2.png', -1), monster_x, monster_y,
+                      monster_floor, all_sprites,
                       monster_group, camera, FPS,
                       player, stairs, map_size, points_can_spawn)
     monster.move_triggers = {
