@@ -511,7 +511,7 @@ class Player(pygame.sprite.Sprite):
 
 
 class Monster(pygame.sprite.Sprite):
-    def __init__(self, im, x, y, fl, all_sprites, group, cam, fps, player, stairs, scr_size):
+    def __init__(self, im, x, y, fl, all_sprites, group, cam, fps, player, stairs, scr_size, points):
         super().__init__(all_sprites)
         self.add(group)
         self.image_normal = im
@@ -543,6 +543,7 @@ class Monster(pygame.sprite.Sprite):
         self.cant_move_try_also_first = False
         self.gone_to_another_axis = False
         self.scr_size = scr_size
+        self.points_can_spawn = points
 
     def move(self, napr):
         s = min(self.v / self.fps, abs(self.moving_to[0] - self.pos[0]) if self.axis_moving == 'x' else abs(
@@ -666,8 +667,7 @@ class Monster(pygame.sprite.Sprite):
         if self.player.floor == self.floor and self.moving_to:
             self.moving()
         elif self.player.floor != self.floor:
-            self.pos = [random.randint(0, self.scr_size[self.floor][0]),
-                        random.randint(0, self.scr_size[self.floor][1])]
+            self.pos = list(random.choice(self.points_can_spawn[self.floor]))
         elif self.player.floor == self.floor and not self.moving_to:
             self.set_new_moving_to()
 
@@ -881,9 +881,11 @@ def game(screen, size, FPS, contin=False):
             mainer.set_image_with_item()
             mainers += [mainer]
     # ======монстр======================================================================================================
+    points_can_spawn = {1: [(1300, 300), (1900, 500), (460, 1111), (1500, 1850), (3300, 1900), (4200, 160)],
+                        2: [(1100, 100), (2300, 300), (2400, 800), (1050, 1600), (750, 730)]}
     monster = Monster(tools.load_image('monster.png', -1), monster_x, monster_y, monster_floor, all_sprites,
                       monster_group, camera, FPS,
-                      player, stairs, map_size)
+                      player, stairs, map_size, points_can_spawn)
     monster.move_triggers = {
         'left': Move_Trigger('vert', monster, move_triggers, monster.pos[0] - monster.v / monster.fps,
                              monster.pos[1] + 4, cant_move_groups),
