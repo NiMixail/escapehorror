@@ -693,7 +693,7 @@ class Camera:
             self.dy = -(target.pos[1] + target.image.get_height() // 2 - self.scr_height // 2)
 
 
-def insert_data(player, monster, camera, mainers, locked_doors):
+def insert_data(player, monster, camera, mainers, locked_doors, secs):
     data = {}
     data['player'] = [str(player.pos[0]), str(player.pos[1]), str(int(player.floor))]
     data['monster'] = [str(monster.pos[0]), str(monster.pos[1]), str(int(monster.floor))]
@@ -709,15 +709,16 @@ def insert_data(player, monster, camera, mainers, locked_doors):
         if i not in [j.color for j in locked_doors]:
             doors_opened += [i]
     data['doors_opened'] = doors_opened
+    data['secs'] = str(secs)
     tools.set_continue(data)
 
 
-def win(screen, size, FPS):
-    end_screen(screen, size, FPS, 'win')
+def win(screen, size, FPS, secs):
+    end_screen(screen, size, FPS, 'win', secs)
 
 
-def lose(screen, size, FPS):
-    end_screen(screen, size, FPS, 'lose')
+def lose(screen, size, FPS, secs):
+    end_screen(screen, size, FPS, 'lose', secs)
 
 
 def game(screen, size, FPS, contin=False):
@@ -727,6 +728,7 @@ def game(screen, size, FPS, contin=False):
     items_in_furn = None
     collected_items = []
     opened_doors = ['green', 'blue']
+    seconds = 0
     if contin:
         cont = tools.load_continue()
         player_x, player_y, player_floor = [float(i) for i in cont['player']]
@@ -735,6 +737,7 @@ def game(screen, size, FPS, contin=False):
         items_in_furn = cont['items']
         collected_items = cont['collected_items']
         opened_doors = cont['doors_opened']
+        seconds = int(cont['secs'])
     else:
         tools.set_default_continue()
     WIDTH, HEIGHT = size
@@ -898,6 +901,8 @@ def game(screen, size, FPS, contin=False):
     clock = pygame.time.Clock()
     MONSTER_CHANGE_FLOOR = pygame.USEREVENT + 1
     pygame.time.set_timer(MONSTER_CHANGE_FLOOR, 25000)
+    SECOND = pygame.USEREVENT + 2
+    pygame.time.set_timer(SECOND, 1000)
     # ==========главный_цикл============================================================================================
     dark_level = 140
 
@@ -909,14 +914,16 @@ def game(screen, size, FPS, contin=False):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 tools.terminate()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                insert_data(player, monster, camera, mainers, locked_doors)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                insert_data(player, monster, camera, mainers, locked_doors, seconds)
                 pygame.mouse.set_visible(True)
                 return
-            if event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN:
                 keys_pressed += [event.key]
-            if event.type == MONSTER_CHANGE_FLOOR:
+            elif event.type == MONSTER_CHANGE_FLOOR:
                 monster.change_floor()
+            elif event.type == SECOND:
+                seconds += 1
         keys = pygame.key.get_pressed()
 
         screen.fill((255, 255, 255))
@@ -939,13 +946,13 @@ def game(screen, size, FPS, contin=False):
         if any([any([pygame.sprite.collide_rect(monster.move_triggers[i], player.move_triggers[j]) for j in
                      player.move_triggers]) for i in
                 monster.move_triggers]) and player.floor == monster.floor and not player.is_hidden:
-            lose(screen, size, FPS)
+            lose(screen, size, FPS, seconds)
             au.bg_music().stop()
             tools.set_default_continue()
             return
         if player.pos[1] < 0:
             au.bg_music().stop()
-            win(screen, size, FPS)
+            win(screen, size, FPS, seconds)
             tools.set_default_continue()
             return
 

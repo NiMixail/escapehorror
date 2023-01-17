@@ -16,7 +16,7 @@ def continue_play(a, b):
 def can_continue():
     with open('data/continue.txt', 'r', encoding='UTF-8') as f:
         text = f.read()
-    if text[0] == ',':
+    if not text or text[0] == ',':
         return False
     return True
 

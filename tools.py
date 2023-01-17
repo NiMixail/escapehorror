@@ -55,6 +55,7 @@ def load_continue():
             data['items'][i[0]] = i[1]
     data['collected_items'] = [i[0] for i in data_list[2] if i[0]]
     data['doors_opened'] = [i[0] for i in data_list[3] if i and i[0]]
+    data['secs'] = data_list[4][0][0]  # str
     return data
 
 
@@ -79,7 +80,9 @@ def set_default_continue():
 , -
 , - открытые двери
 , -
-, - """)
+, - 
+
+, - секунд с начала игры""")
 
 
 def set_continue(data):
@@ -114,7 +117,9 @@ def set_continue(data):
 
 {col_items}
 
-{dor_op}""")
+{dor_op}
+
+{data['secs']}, - секунд с начала игры'""")
 
 
 def load_map():

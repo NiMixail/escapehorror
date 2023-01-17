@@ -29,7 +29,7 @@ class Background(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
 
-def end_screen(screen, size, FPS, type):
+def end_screen(screen, size, FPS, type, secs):
     clock = pygame.time.Clock()
     all_sprites = pygame.sprite.Group()
     backgroundes = pygame.sprite.Group()
@@ -42,6 +42,13 @@ def end_screen(screen, size, FPS, type):
     au.eff('screamer' if type == 'lose' else 'win').play()
     screen.fill((0, 0, 0))
     backgroundes.draw(screen)
+
+    if type == 'win':
+        font = pygame.font.Font(None, 60)
+        msg = f"Game beaten in {str(secs // 60).zfill(2)}:{str(secs % 60).zfill(2)}"
+        font_sur = font.render(msg, True, 'white')
+        screen.blit(font_sur, (size[0] // 2 - font_sur.get_width() // 2, size[1] // 2))
+
     pygame.display.flip()
     pygame.time.delay(2000)
 
