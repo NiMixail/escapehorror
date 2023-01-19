@@ -555,7 +555,6 @@ class Monster(pygame.sprite.Sprite):
         self.scr_size = scr_size
         self.points_can_spawn = points
 
-
     def animate(self):
         if self.animate_score == 7:
             self.animate_score = 0
@@ -1027,7 +1026,6 @@ if __name__ == '__main__':
     pygame.init()
     size = width, height = 1542, 864
     FPS = 60
-
 
     screen = pygame.display.set_mode(size)
     game(screen, size, FPS)
