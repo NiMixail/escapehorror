@@ -388,13 +388,16 @@ class Interaction_Trigger(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, fl, im, all_sprites, group, scr_size, map_size, fps, cam, screen, furn_group):
+    def __init__(self, x, y, fl, spr_sheet, all_sprites, group, scr_size, map_size, fps, cam, screen, furn_group):
         super().__init__(all_sprites)
         self.add(group)
-        self.image_normal = im
-        self.image = self.image_normal
+        self.images = {}
+        self.images_going = {}
+        self.cut_sheet(spr_sheet, 2, 1)
+        print(self.images, self.images_going)
+        self.image = self.images['down']
         self.rect = self.image.get_rect()
-        self.mask = pygame.mask.from_surface(self.image_normal)
+        self.mask = pygame.mask.from_surface(self.image)
         self.pos = [x, y]
         self.rect.x, self.rect.y = self.pos
         self.floor = fl
@@ -411,6 +414,22 @@ class Player(pygame.sprite.Sprite):
         self.current_object = None
         self.is_hidden = False
         self.furn_group = furn_group
+        self.napr_x = None
+        self.napr_y = 'down'
+        self.animation_score = 0
+        self.max_animation_score = 10
+
+    def cut_sheet(self, sheet, columns, rows):
+        rect_w, rect_h = sheet.get_width() // columns, sheet.get_height() // rows
+        d = {0: 'down', 1: 'left', 2: 'right', 3: 'up'}
+        for j in range(rows):
+            for i in range(columns):
+                loc = (rect_w * i, rect_h * j)
+                image = sheet.subsurface(pygame.Rect(loc, (rect_w, rect_h)))
+                if i:
+                    self.images_going[d[j]] = image
+                else:
+                    self.images[d[j]] = image
 
     def can_move_down(self):
         return self.move_triggers['down'].can_move() and not self.is_hidden
@@ -426,12 +445,12 @@ class Player(pygame.sprite.Sprite):
 
     def update_move_triggers(self):
         self.move_triggers['down'].rect.x = self.rect.x + 4
-        self.move_triggers['down'].rect.y = self.rect.y + self.image_normal.get_height() + self.v / self.fps
+        self.move_triggers['down'].rect.y = self.rect.y + self.image.get_height() + self.v / self.fps
         self.move_triggers['down'].floor = self.floor
         self.move_triggers['up'].rect.x = self.rect.x + 4
         self.move_triggers['up'].rect.y = self.rect.y - self.v / self.fps + 1
         self.move_triggers['up'].floor = self.floor
-        self.move_triggers['right'].rect.x = self.rect.x + self.image_normal.get_width() + self.v / self.fps
+        self.move_triggers['right'].rect.x = self.rect.x + self.image.get_width() + self.v / self.fps
         self.move_triggers['right'].rect.y = self.rect.y + 4
         self.move_triggers['right'].floor = self.floor
         self.move_triggers['left'].rect.x = self.rect.x - self.v / self.fps + 1
@@ -439,8 +458,8 @@ class Player(pygame.sprite.Sprite):
         self.move_triggers['left'].floor = self.floor
 
     def update_interaction_trigger(self):
-        self.interaction_trigger.rect.x = self.rect.x - self.image_normal.get_width() // 4
-        self.interaction_trigger.rect.y = self.rect.y - self.image_normal.get_height() // 4
+        self.interaction_trigger.rect.x = self.rect.x - self.image.get_width() // 4
+        self.interaction_trigger.rect.y = self.rect.y - self.image.get_height() // 4
         self.interaction_trigger.floor = self.floor
 
     def can_use(self, obj):
@@ -453,7 +472,7 @@ class Player(pygame.sprite.Sprite):
         if len(spr_list) == 0:
             self.current_object = None
             return
-        centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image_normal.get_height() // 2)
+        centre = (self.pos[0] + self.image.get_width() // 2, self.pos[1] + self.image.get_height() // 2)
         spr_dict = {}
         for obj in spr_list:
             obj_centre = (obj.pos[0] + obj.image.get_width() // 2, obj.pos[1] + obj.image.get_height() // 2)
@@ -461,18 +480,43 @@ class Player(pygame.sprite.Sprite):
             spr_dict[dist] = obj
         self.current_object = spr_dict[min(spr_dict)]
 
+    def animate(self):
+        if not self.napr_y and not self.napr_x:
+            pass
+        if self.napr_y:
+            if self.animation_score == self.max_animation_score:
+                pass
+
     def motion(self, keys):
+        napr_y = None
+        napr_x = None
+        score_update = False
         if keys[pygame.K_DOWN] and self.can_move_down():
             self.pos[1] += self.v / self.fps
+            napr_y = 'down'
+            score_update = True
         if keys[pygame.K_UP] and self.can_move_up():
             self.pos[1] -= self.v / self.fps
+            napr_y = 'up'
+            score_update = True
         if keys[pygame.K_RIGHT] and self.can_move_right():
             self.pos[0] += self.v / self.fps
+            napr_x = 'right'
+            score_update = True
         if keys[pygame.K_LEFT] and self.can_move_left():
             self.pos[0] -= self.v / self.fps
+            napr_x = 'left'
+            score_update = True
         if self.scr_width // 2 - self.image.get_width() // 2 <= self.pos[0] <= self.map_size[self.floor][
             0] - self.scr_width // 2 - self.image.get_width() // 2:
             self.cam.update(self, 'ox')
+        self.napr_x = napr_x
+        self.napr_y = napr_y
+        if not score_update:
+            self.animation_score = 0
+            self.image = self.images['down']
+        else:
+            self.animation_score += 1
         if self.scr_height // 2 - self.image.get_height() // 2 <= \
                 self.pos[1] <= self.map_size[self.floor][1] - self.scr_height // 2 - self.image.get_height() // 2:
             self.cam.update(self, 'oy')
@@ -502,6 +546,7 @@ class Player(pygame.sprite.Sprite):
     def update(self, keys, keys_pressed):
         self.z_pressed = False
         self.motion(keys)
+        self.animate()
         self.current_check()
         self.deystvie(keys_pressed)
         self.is_hidden_image_change()
