@@ -400,7 +400,7 @@ class Player(pygame.sprite.Sprite):
         self.floor = fl
         self.scr_width, self.scr_height = scr_size
         self.map_size = map_size
-        self.v = 400
+        self.v = 250
         self.fps = fps
         self.cam = cam
         self.screen = screen
@@ -517,14 +517,14 @@ class Monster(pygame.sprite.Sprite):
         self.image_normal = im
         self.image_2 = im_2
         self.image = self.image_normal
-        self.image_left = self.image_normal
-        self.image_right = pygame.transform.flip(self.image_left, True, False)
-        self.image_up = pygame.transform.rotate(self.image_left, 270)
-        self.image_down = pygame.transform.flip(self.image_up, False, True)
-        self.image_2_left = self.image_2
-        self.image_2_right = pygame.transform.flip(self.image_2_left, True, False)
-        self.image_2_up = pygame.transform.rotate(self.image_2_left, 270)
-        self.image_2_down = pygame.transform.rotate(self.image_2_left, 90)
+        self.image_down = self.image_normal
+        self.image_up = pygame.transform.flip(self.image_down, False, True)
+        self.image_right = pygame.transform.rotate(self.image_down, 90)
+        self.image_left = pygame.transform.rotate(self.image_down, 270)
+        self.image_2_down = self.image_2
+        self.image_2_up = pygame.transform.flip(self.image_2_down, False, True)
+        self.image_2_right = pygame.transform.rotate(self.image_2_down, 90)
+        self.image_2_left = pygame.transform.rotate(self.image_2_down, 270)
         self.images = {'left': self.image_left, 'right': self.image_right, 'up': self.image_up, 'down': self.image_down}
         self.images_2 = {'left': self.image_2_left, 'right': self.image_2_right, 'up': self.image_2_up,
                          'down': self.image_2_down}
@@ -537,8 +537,8 @@ class Monster(pygame.sprite.Sprite):
         self.floor = fl
         self.cam = cam
         self.fps = fps
-        self.v_going = 300
-        self.v_running = 405
+        self.v_going = 150
+        self.v_running = 255
         self.v = self.v_going
         self.move_triggers = {}
         self.interaction_trigger = None
@@ -1026,7 +1026,7 @@ def game(screen, size, FPS, contin=False):
 if __name__ == '__main__':
     pygame.init()
     size = width, height = 1542, 864
-    FPS = 120
+    FPS = 60
 
 
     screen = pygame.display.set_mode(size)
