@@ -393,7 +393,7 @@ class Player(pygame.sprite.Sprite):
         self.add(group)
         self.images = {}
         self.images_going = {}
-        self.cut_sheet(spr_sheet, 2, 1)
+        self.cut_sheet(spr_sheet, 2, 4)
         print(self.images, self.images_going)
         self.image = self.images['down']
         self.rect = self.image.get_rect()
@@ -403,7 +403,7 @@ class Player(pygame.sprite.Sprite):
         self.floor = fl
         self.scr_width, self.scr_height = scr_size
         self.map_size = map_size
-        self.v = 250
+        self.v = 150
         self.fps = fps
         self.cam = cam
         self.screen = screen
@@ -418,6 +418,7 @@ class Player(pygame.sprite.Sprite):
         self.napr_y = 'down'
         self.animation_score = 0
         self.max_animation_score = 10
+        self.last_napr = 'down'
 
     def cut_sheet(self, sheet, columns, rows):
         rect_w, rect_h = sheet.get_width() // columns, sheet.get_height() // rows
@@ -482,10 +483,15 @@ class Player(pygame.sprite.Sprite):
 
     def animate(self):
         if not self.napr_y and not self.napr_x:
-            pass
-        if self.napr_y:
-            if self.animation_score == self.max_animation_score:
-                pass
+            return
+        napr = self.napr_x if self.napr_x else self.napr_y
+        if napr != self.last_napr:
+            self.last_napr = napr
+            self.image = self.images[napr]
+        if self.animation_score == self.max_animation_score:
+            self.animation_score = 0
+            self.image = self.images_going[napr] if self.image == self.images[napr] else self.images[napr]
+            self.animation_score = 0
 
     def motion(self, keys):
         napr_y = None
@@ -515,6 +521,7 @@ class Player(pygame.sprite.Sprite):
         if not score_update:
             self.animation_score = 0
             self.image = self.images['down']
+            self.last_napr = 'down'
         else:
             self.animation_score += 1
         if self.scr_height // 2 - self.image.get_height() // 2 <= \
@@ -582,8 +589,8 @@ class Monster(pygame.sprite.Sprite):
         self.floor = fl
         self.cam = cam
         self.fps = fps
-        self.v_going = 150
-        self.v_running = 255
+        self.v_going = 100
+        self.v_running = 155
         self.v = self.v_going
         self.move_triggers = {}
         self.interaction_trigger = None
