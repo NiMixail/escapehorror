@@ -871,7 +871,7 @@ def game(screen, size, FPS, contin=False):
     classes = {'Stairs': Stairs, 'Cupboard': Furniture_that_can_be_opened,
                'Glass_Cupboard': Furniture_that_can_be_opened, 'Shelf': Furniture_that_can_be_opened,
                'Kitchen_Cupboard': Furniture_that_can_be_opened, 'Can_hide': Furniture_you_can_hide, 'Door': Door}
-    images = {'Stairs': tools.load_image('furniture\\stairs.png', -1), 'Cupboard': (
+    images = {'Stairs': tools.load_image('furniture\\stairs.jpg', -1), 'Cupboard': (
         tools.load_image('furniture\\cupboard.png', -1), tools.load_image('furniture\\cupboard_opened.png', -1)),
               'Door': (
                   tools.load_image('furniture\\door_closed.png'), tools.load_image('furniture\\door_opened.png', -1)),
