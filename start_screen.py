@@ -78,9 +78,9 @@ def start_screen(screen, size, FPS, play, play_args, continue_play, continue_pla
 
     windows = []
     background_im, pl_b_im, cont_pl_b_im, ex_b_im = load_image('start_screen/background.png'), \
-                                                    load_image('start_screen/play_button.png', -1), load_image(
+        load_image('start_screen/play_button.png', -1), load_image(
         'start_screen/continue_button.png', -1), \
-                                                    load_image('start_screen/exit_button.png', -1)
+        load_image('start_screen/exit_button.png', -1)
     Background(background_im, all_sprites, backgroundes)
     interval = 5
     play_button = Button(pl_b_im, all_sprites, buttons, WIDTH // 2 - pl_b_im.get_width() // 2,
